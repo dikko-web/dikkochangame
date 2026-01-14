@@ -3,46 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ディッコちゃんわからせゲーム</title>
+    <title>触手 vs メスガキディッコ</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: monospace; overflow: hidden; touch-action: none; }
-        #game-container { width: 360px; height: 480px; position: relative; border: 2px solid #fff; margin: auto; display: flex; flex-direction: column; }
+        body { margin: 0; background: #000; color: #fff; font-family: "MS Gothic", monospace; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        #game-container { width: 360px; height: 480px; position: relative; border: 2px solid #fff; display: flex; flex-direction: column; background: #000; }
+        #status-area { padding: 10px; border-bottom: 2px solid #fff; background: #111; font-size: 14px; }
+        .bar-bg { width: 100%; height: 8px; background: #333; border: 1px solid #fff; margin: 4px 0 8px 0; }
+        #enemy-hp-fill { width: 100%; height: 100%; background: #f0f; transition: 0.3s; }
+        #player-st-fill { width: 100%; height: 100%; background: #0f0; transition: 0.3s; }
+
+        #message-box { height: 90px; padding: 12px; font-size: 15px; border-bottom: 1px solid #444; box-sizing: border-box; background: #050505; overflow-y: auto; }
         
-        /* ゲージとメッセージ */
-        #status-area { padding: 10px; font-size: 14px; border-bottom: 1px solid #444; }
-        .gauge-container { width: 100%; height: 10px; background: #222; margin: 5px 0; border: 1px solid #666; }
-        .gauge-bar { height: 100%; width: 0%; transition: width 0.3s; }
-        #sub-bar { background: #f0f; }
-        #ctrl-bar { background: #0f0; width: 40%; }
-
-        #character-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; position: relative; }
-        #character-image { max-width: 80%; animation: breathe 3s ease-in-out infinite alternate; }
-        @keyframes breathe { from { transform: translateY(0); } to { transform: translateY(-10px); } }
-
-        /* 重要：わからせ成功オーバーレイ */
-        #win-overlay {
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); flex-direction: column; justify-content: center; align-items: center;
-            z-index: 100; pointer-events: auto; /* クリックを許可 */
-        }
-        .success-text { color: #f0f; font-size: 28px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 10px #f0f; }
+        #character-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; }
+        #character-image { max-width: 85%; max-height: 85%; object-fit: contain; animation: breathe 3s ease-in-out infinite alternate; }
         
-        .choice-buttons { display: flex; gap: 10px; z-index: 110; }
-        .choice-btn {
-            width: 140px; height: 80px; background: #222; border: 2px solid #fff; color: #fff;
-            font-size: 14px; cursor: pointer; pointer-events: auto;
-        }
+        @keyframes breathe { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
+        @keyframes shake { 0% { transform: translate(-5px,0); } 100% { transform: translate(5px,0); } }
 
-        /* ボタン配置 */
-        #button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 10px; height: 100px; }
-        .game-button { background: #222; color: #fff; border: 1px solid #fff; cursor: pointer; }
+        /* ボタン */
+        #button-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; padding: 12px; background: #111; height: 130px; }
+        .game-button { background: #222; color: white; border: 1px solid #fff; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .game-button:active { background: #555; }
+        /* 無効化された時の見た目 */
+        .game-button:disabled { color: #555; border-color: #444; cursor: not-allowed; opacity: 0.6; }
 
+        /* オーバーレイ */
+        .overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        
         /* スライドショー */
-        #slideshow-container {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 1000; justify-content: center; align-items: center;
-        }
-        #slideshow-image { max-width: 100%; max-height: 100%; opacity: 0; transition: opacity 0.5s; }
+        #slideshow-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; justify-content: center; align-items: center; z-index: 2000; cursor: pointer; }
+        #slideshow-image { max-width: 100%; max-height: 100%; object-fit: contain; opacity: 0; transition: opacity 0.4s; }
         #slideshow-image.active { opacity: 1; }
     </style>
 </head>
@@ -50,72 +40,136 @@
 
 <div id="game-container">
     <div id="status-area">
-        屈服度: <span id="sub-val">0</span>% <div class="gauge-container"><div id="sub-bar" class="gauge-bar"></div></div>
-        制御力: 21 <div class="gauge-container"><div id="ctrl-bar" class="gauge-bar"></div></div>
+        ディッコちゃんの屈服度: <span id="e-hp-val">100</span>%
+        <div class="bar-bg"><div id="enemy-hp-fill"></div></div>
+        お前の触手制御力: <span id="p-st-val">100</span>
+        <div class="bar-bg"><div id="player-st-fill"></div></div>
     </div>
-
+    <div id="message-box">「う、うわっ…何よこのヌルヌルしたやつ！<br>やめなさいよ！変態！」</div>
     <div id="character-area">
         <img src="ball.png" id="character-image">
         
-        <div id="win-overlay">
-            <div class="success-text">わからせ成功！</div>
-            <div style="margin-bottom:20px;">どうしてあげる？</div>
-            <div class="choice-buttons">
-                <button class="choice-btn" onclick="startEnding('prison')">触手牢屋へ<br>放り込む</button>
-                <button class="choice-btn" onclick="startEnding('love')">いっぱい<br>愛してあげる</button>
+        <div id="lose-overlay" class="overlay">
+            <h1 style="color: red; font-size: 32px;">制御失敗…</h1>
+            <p id="lose-msg" style="padding: 20px;">「あはは！触手すら操れないの？<br>本当、無様で笑っちゃう♡」</p>
+            <button class="game-button" style="width: 150px; height: 50px;" onclick="location.reload()">再挑戦</button>
+        </div>
+
+        <div id="win-overlay" class="overlay">
+            <h1 style="color: #f0f; font-size: 32px;">わからせ成功！</h1>
+            <p>ディッコちゃんは完全に無力化された。<br>どうしてあげる？</p>
+            <div style="display: flex; gap: 20px; margin-top: 20px;">
+                <button class="game-button" style="padding: 10px;" onclick="startEnding('jail')">触手牢屋へ<br>放り込む</button>
+                <button class="game-button" style="padding: 10px;" onclick="startEnding('love')">いっぱい<br>愛してあげる</button>
             </div>
         </div>
     </div>
-
     <div id="button-grid">
-        <button class="game-button" onclick="handleAction('戦う')">戦う</button>
-        <button class="game-button" onclick="handleAction('犯す')">犯す</button>
-        <button class="game-button" onclick="handleAction('デート')">デート</button>
-        <button class="game-button" onclick="handleAction('逃げる')">逃げる</button>
+        <button class="game-button" onclick="battleAction('bind')">触手拘束</button>
+        <button class="game-button" onclick="battleAction('caress')">ヌルヌル愛撫</button>
+        <button class="game-button" onclick="battleAction('tighten')">締め上げる</button>
+        <button class="game-button" onclick="battleAction('threat')">脅す</button>
     </div>
 </div>
 
 <div id="slideshow-container" onclick="showNextSlide()">
-    <img id="slideshow-image" src="">
+    <img id="slideshow-image">
+    <div style="position: absolute; bottom: 20px; color: rgba(255,255,255,0.5);">タップで次へ</div>
 </div>
 
 <script>
+    let enemyHP = 100;
+    let playerST = 100;
     let slideImages = [];
     let slideIndex = 0;
-    let isEndingStarted = false;
 
-    function handleAction(action) {
-        if (action === '犯す') {
-            document.getElementById('sub-bar').style.width = "100%";
-            document.getElementById('sub-val').innerText = "100";
+    function battleAction(type) {
+        if (enemyHP <= 0 || playerST <= 0) return;
+        disableButtons(true); // ★アクション開始時にボタンを無効化
+        let eDmg = 0; let pCost = 0; let pRec = 0; let msg = "";
+
+        switch(type) {
+            case 'bind': eDmg = 15; pCost = 10; msg = "触手で手足を縛り上げた！<br>「は、離しなさいよ！バカ！」"; break;
+            case 'caress': eDmg = 5; pRec = 30; msg = "執拗にヌルヌルと愛撫した。<br>触手の制御力が回復していく…"; break;
+            case 'tighten': eDmg = 30; pCost = 25; msg = "触手で強く締め上げた！<br>「あ、あぐっ！？ 苦し…離してぇ…」"; break;
+            case 'threat':
+                if (Math.random() > 0.4) { eDmg = 40; pCost = 10; msg = "恐怖で心を折りにいった！<br>「う、嘘でしょ…そんな、本気なの…？」"; }
+                else { pCost = 15; msg = "「全然怖くないもんねー！」<br>ディッコちゃんはまだ強気だ。"; }
+                break;
+        }
+
+        enemyHP = Math.max(0, enemyHP - eDmg);
+        playerST = Math.max(0, Math.min(100, playerST - pCost + pRec));
+        updateUI(msg);
+
+        if (enemyHP <= 0) {
+            // ★勝利した時もボタンを有効化してから画面を出す
             setTimeout(() => {
+                disableButtons(false);
                 document.getElementById('win-overlay').style.display = 'flex';
-            }, 500);
+            }, 1000);
+        } else {
+            setTimeout(enemyTurn, 1000);
         }
     }
 
-    // エンド開始処理（提供いただいたロジックを統合）
-    function startEnding(type) {
-        if (isEndingStarted) return;
-        isEndingStarted = true;
+    function enemyTurn() {
+        let pDmg = 10 + Math.floor(Math.random() * 20);
+        let msg = "";
+        const r = Math.random();
+        if (r > 0.6) { msg = "「ざぁ～こ♡ 触手に操られてるんじゃない？」<br>煽られて制御力が乱れる！"; }
+        else { msg = "ディッコちゃんが激しく暴れた！<br>触手の維持に精神を削られる！"; }
+        playerST = Math.max(0, playerST - pDmg);
+        updateUI(msg, true);
+        
+        if (playerST <= 0) {
+            // ★敗北した時もボタンを有効化してから画面を出す
+            setTimeout(() => {
+                disableButtons(false);
+                document.getElementById('lose-overlay').style.display = 'flex';
+            }, 1000);
+        } else {
+            disableButtons(false); // 継続時はボタンを戻す
+        }
+    }
 
+    function updateUI(msg, isEnemy = false) {
+        document.getElementById('e-hp-val').innerText = enemyHP;
+        document.getElementById('enemy-hp-fill').style.width = enemyHP + "%";
+        document.getElementById('p-st-val').innerText = playerST;
+        document.getElementById('player-st-fill').style.width = playerST + "%";
+        document.getElementById('message-box').innerHTML = msg;
+        const char = document.getElementById('character-image');
+        if (isEnemy) { char.style.transform = "scale(1.1) rotate(5deg)"; setTimeout(() => char.style.transform = "scale(1.0)", 200); }
+        else { char.style.animation = "shake 0.1s infinite"; setTimeout(() => char.style.animation = "breathe 3s ease-in-out infinite alternate", 500); }
+    }
+
+    function disableButtons(bool) {
+        const btns = document.getElementsByClassName('game-button');
+        for (let b of btns) b.disabled = bool;
+    }
+
+    function startEnding(type) {
         document.getElementById('win-overlay').style.display = 'none';
         document.getElementById('game-container').style.display = 'none';
         document.getElementById('slideshow-container').style.display = 'flex';
 
         slideImages = [];
-        const maxImages = 20;
-        for (let i = 1; i <= maxImages; i++) {
-            const num = i.toString().padStart(3, '0');
-            let path = "";
-            if (type === 'love') {
-                path = `date/dikkochan202507_${num}.jpg`;
-            } else {
-                // スクリーンショットのパスを再現（日本語/スペース対応）
-                path = `tentacles/DIKKOCHAN4_${num}（カスタム）.jpg`;
+        const maxImages = 20; 
+
+        if (type === 'love') {
+            for (let i = 1; i <= maxImages; i++) {
+                const num = i.toString().padStart(3, '0');
+                slideImages.push(`date/dikkochan202507_${num}.jpg`);
             }
-            slideImages.push(path);
+        } else {
+            for (let i = 1; i <= maxImages; i++) {
+                const num = i.toString().padStart(3, '0');
+                // URLエンコードを考慮しつつパスを指定
+                slideImages.push(`tentacles/DIKKOCHAN4_${num} (カスタム).jpg`);
+            }
         }
+        
         slideIndex = 0;
         showNextSlide();
     }
@@ -123,33 +177,22 @@
     function showNextSlide() {
         const slideImg = document.getElementById('slideshow-image');
         if (slideIndex >= slideImages.length) {
-            alert("わからせ完了！");
+            alert("ディッコちゃんを存分にわからせました。");
             location.reload();
             return;
         }
-
-        const targetSrc = slideImages[slideIndex];
         slideImg.classList.remove('active');
-
-        // 画像のプリロードとエラーハンドリング
-        const tempImg = new Image();
-        tempImg.src = encodeURI(targetSrc); 
         
+        const tempImg = new Image();
+        tempImg.src = slideImages[slideIndex];
         tempImg.onload = () => {
             slideImg.src = tempImg.src;
             slideImg.classList.add('active');
             slideIndex++;
         };
-
         tempImg.onerror = () => {
-            console.error("画像が見つかりません:", targetSrc);
-            slideIndex++;
-            if (slideIndex < slideImages.length) {
-                showNextSlide();
-            } else {
-                alert("画像がGitHubに正しく上がっていないようです。");
-                location.reload();
-            }
+            alert("全ての画像を表示しました。");
+            location.reload();
         };
     }
 </script>
