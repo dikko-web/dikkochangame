@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>画像版スマホブロック崩し</title>
+    <title>dikko-game DX</title>
     <style>
-        /* 背景画像を設定したい場合は、ここのbackgroundを変えてください */
-        body { margin: 0; overflow: hidden; background: #333 url('bg.jpg') no-repeat center center; background-size: cover; display: flex; justify-content: center; align-items: center; height: 100vh; touch-action: none; }
-        /* Canvasの背景を透明にして、bodyの背景画像が見えるようにします */
-        canvas { display: block; border: none; max-width: 100%; max-height: 100%; }
+        body { margin: 0; overflow: hidden; background: #222; display: flex; justify-content: center; align-items: center; height: 100vh; touch-action: none; font-family: 'Arial', sans-serif; }
+        canvas { display: block; border: 2px solid #fff; max-width: 100%; max-height: 100%; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
@@ -22,100 +20,141 @@ const ctx = canvas.getContext("2d");
 canvas.width = 360;
 canvas.height = 480;
 
-// --- 画像の準備エリア ---
-const ballImg = new Image();
-ballImg.src = 'ball.png'; // ボールの画像ファイル名
+// --- 画像・設定 ---
+let lives = 3;
+let isClear = false;
+let isGameOver = false;
 
-const paddleImg = new Image();
-paddleImg.src = 'paddle.png'; // パドルの画像ファイル名
+const ballImg = new Image(); ballImg.src = 'ball.png';
+const paddleImg = new Image(); paddleImg.src = 'paddle.png';
+const bgImg = new Image(); bgImg.src = 'bg.jpg';
+const clearImg = new Image(); clearImg.src = 'clear.png';
 
-const brickImg = new Image();
-brickImg.src = 'brick.png'; // ブロックの画像ファイル名
-
-// 画像が全て読み込まれてからゲームを開始するための仕組み
-let imagesLoaded = 0;
-const totalImages = 3;
-function handleImageLoad() {
-    imagesLoaded++;
-    if (imagesLoaded === totalImages) {
-        // 全ての画像準備完了したらゲームスタート
-        draw();
-    }
-}
-// 各画像に読み込み完了時の連絡先を設定
-ballImg.onload = handleImageLoad;
-paddleImg.onload = handleImageLoad;
-brickImg.onload = handleImageLoad;
-// ----------------------
-
-
-// ボールの設定
-let x = canvas.width / 2;
-let y = canvas.height - 100;
-let dx = 3;
-let dy = -3;
-const ballRadius = 10; // 画像サイズに合わせて少し大きめに調整
-
-// パドルの設定
-const paddleHeight = 20; // 画像に合わせて少し高さを調整
-const paddleWidth = 80;
+const ballRadius = 15;
+const paddleHeight = 20;
+const paddleWidth = 90;
 let paddleX = (canvas.width - paddleWidth) / 2;
-const paddleBottomMargin = 10;
 
-// ブロックの設定
-const brickRowCount = 5;
-const brickColumnCount = 4;
-const brickWidth = 70;
-const brickHeight = 25; // 画像に合わせて少し高さを調整
-const brickPadding = 10;
+// ボール管理（配列にして複数対応）
+let balls = [];
+function createBall(x, y, dx, dy) {
+    return { x: x, y: y, dx: dx, dy: dy };
+}
+function resetGame() {
+    balls = [createBall(canvas.width / 2, canvas.height - 100, 3, -4)];
+}
+resetGame();
+
+// アイテム管理
+let items = [];
+const itemSize = 20;
+
+// ブロック設定
+const brickRowCount = 6;
+const brickColumnCount = 5;
+const brickWidth = 60;
+const brickHeight = 20;
+const brickPadding = 6;
 const brickOffsetTop = 50;
-const brickOffsetLeft = 25;
+const brickOffsetLeft = 18;
+const brickColors = ["#FF5733", "#33FF57", "#3357FF", "#F3FF33", "#FF33F3", "#33FFF3"];
 
 const bricks = [];
 for(let c=0; c<brickColumnCount; c++) {
     bricks[c] = [];
     for(let r=0; r<brickRowCount; r++) {
-        bricks[c][r] = { x: 0, y: 0, status: 1 };
+        bricks[c][r] = { x: 0, y: 0, status: 1, color: brickColors[r] };
     }
 }
 
-// タッチ・マウス操作
+// 操作
 function movePaddle(e) {
     let relativeX;
-    if(e.touches) {
-        e.preventDefault(); // スマホでのスクロールなどを防ぐ
-        relativeX = e.touches[0].clientX - canvas.offsetLeft;
-    } else {
-        relativeX = e.clientX - canvas.offsetLeft;
-    }
-    // パドルの中心が指の位置に来るように調整
+    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    relativeX = clientX - canvas.offsetLeft;
     if(relativeX > 0 && relativeX < canvas.width) {
         paddleX = relativeX - paddleWidth / 2;
     }
 }
-document.addEventListener("touchmove", movePaddle, { passive: false });
+document.addEventListener("touchmove", (e) => { e.preventDefault(); movePaddle(e); }, { passive: false });
 document.addEventListener("mousemove", movePaddle);
 
-// 当たり判定
-function collisionDetection() {
-    for(let c=0; c<brickColumnCount; c++) {
-        for(let r=0; r<brickRowCount; r++) {
-            let b = bricks[c][r];
-            if(b.status == 1) {
-                // 簡易的な矩形（四角形）同士の当たり判定
-                if(x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight) {
-                    dy = -dy;
-                    b.status = 0;
+function update() {
+    if(isClear || isGameOver) return;
+
+    // ボールの移動と判定
+    balls.forEach((ball, index) => {
+        ball.x += ball.dx;
+        ball.y += ball.dy;
+
+        // 壁反射
+        if(ball.x + ball.dx > canvas.width - ballRadius || ball.x + ball.dx < ballRadius) ball.dx = -ball.dx;
+        if(ball.y + ball.dy < ballRadius) ball.dy = -ball.dy;
+        
+        // パドル反射（角度変化ロジック）
+        if(ball.y + ball.dy > canvas.height - 30 - ballRadius) {
+            if(ball.x > paddleX && ball.x < paddleX + paddleWidth) {
+                // 当たった位置で角度を変える (-0.5 〜 0.5)
+                let hitPos = (ball.x - (paddleX + paddleWidth / 2)) / (paddleWidth / 2);
+                let speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                ball.dx = hitPos * speed * 0.8; // 端っこほど横に飛ぶ
+                ball.dy = -Math.sqrt(speed * speed - ball.dx * ball.dx); // 速度を一定に保つ
+            } else if (ball.y + ball.dy > canvas.height) {
+                balls.splice(index, 1); // ボールを削除
+                if(balls.length === 0) {
+                    lives--;
+                    if(lives <= 0) isGameOver = true;
+                    else resetGame();
                 }
             }
         }
-    }
+
+        // ブロック衝突
+        let allCleared = true;
+        for(let c=0; c<brickColumnCount; c++) {
+            for(let r=0; r<brickRowCount; r++) {
+                let b = bricks[c][r];
+                if(b.status == 1) {
+                    allCleared = false;
+                    if(ball.x > b.x && ball.x < b.x+brickWidth && ball.y > b.y && ball.y < b.y+brickHeight) {
+                        ball.dy = -ball.dy;
+                        b.status = 0;
+                        // 20%の確率でアイテムドロップ
+                        if(Math.random() < 0.2) {
+                            items.push({ x: b.x + brickWidth/2, y: b.y, type: 'triple' });
+                        }
+                    }
+                }
+            }
+        }
+        if(allCleared) isClear = true;
+    });
+
+    // アイテムの移動とパドル取得判定
+    items.forEach((item, index) => {
+        item.y += 2;
+        if(item.y > canvas.height) items.splice(index, 1);
+        if(item.y > canvas.height - 30 - itemSize && item.x > paddleX && item.x < paddleX + paddleWidth) {
+            // アイテムゲット！ボールを3倍に増やす
+            items.splice(index, 1);
+            let currentCount = balls.length;
+            for(let i=0; i < currentCount; i++) {
+                let b = balls[i];
+                balls.push(createBall(b.x, b.y, b.dx + 2, -b.dy));
+                balls.push(createBall(b.x, b.y, b.dx - 2, -b.dy));
+            }
+        }
+    });
 }
 
 function draw() {
+    update();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // ブロック描画（画像を使用）
+    // 背景
+    ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+
+    // シンプルブロック描画
     for(let c=0; c<brickColumnCount; c++) {
         for(let r=0; r<brickRowCount; r++) {
             if(bricks[c][r].status == 1) {
@@ -123,52 +162,73 @@ function draw() {
                 let brickY = (r*(brickHeight+brickPadding))+brickOffsetTop;
                 bricks[c][r].x = brickX;
                 bricks[c][r].y = brickY;
-                // fillRectの代わりにdrawImageを使用
-                // ctx.drawImage(画像, X座標, Y座標, 幅, 高さ)
-                ctx.drawImage(brickImg, brickX, brickY, brickWidth, brickHeight);
+                ctx.fillStyle = bricks[c][r].color;
+                ctx.fillRect(brickX, brickY, brickWidth, brickHeight);
+                // 枠線
+                ctx.strokeStyle = "rgba(255,255,255,0.5)";
+                ctx.strokeRect(brickX, brickY, brickWidth, brickHeight);
             }
         }
     }
 
-    // ボール描画（画像を使用）
-    // ボールの中心座標(x, y)から、画像の左上座標を計算して描画
-    ctx.drawImage(ballImg, x - ballRadius, y - ballRadius, ballRadius * 2, ballRadius * 2);
+    // アイテム描画
+    items.forEach(item => {
+        ctx.fillStyle = "#FFD700";
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, 12, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 14px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("3", item.x, item.y + 5);
+    });
 
-    // パドル描画（画像を使用）
-    ctx.drawImage(paddleImg, paddleX, canvas.height - paddleHeight - paddleBottomMargin, paddleWidth, paddleHeight);
+    // ボール・パドル描画
+    balls.forEach(ball => {
+        ctx.drawImage(ballImg, ball.x - ballRadius, ball.y - ballRadius, ballRadius * 2, ballRadius * 2);
+    });
+    ctx.drawImage(paddleImg, paddleX, canvas.height - 30, paddleWidth, paddleHeight);
 
-    collisionDetection();
+    // UI
+    ctx.font = "bold 20px Arial";
+    ctx.fillStyle = "white";
+    ctx.textAlign = "left";
+    ctx.fillText("LIVES: " + lives, 20, 30);
+    ctx.fillText("BALLS: " + balls.length, 250, 30);
 
-    // 壁との反射
-    // 左右の壁
-    if(x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
-        dx = -dx;
+    if(isClear) {
+        ctx.drawImage(clearImg, 30, 80, 300, 300);
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "center";
+        ctx.font = "bold 40px Arial";
+        ctx.fillText("ALL CLEAR!!", canvas.width/2, canvas.height/2);
+        return;
     }
-    // 天井
-    if(y + dy < ballRadius) {
-        dy = -dy;
-    } 
-    // 床（パドルとの判定）
-    else if(y + dy > canvas.height - ballRadius - paddleBottomMargin) {
-        // ボールのX座標がパドルの幅の範囲内にあるか
-        if(x > paddleX && x < paddleX + paddleWidth) {
-            // パドルの少し上で跳ね返るように位置を調整（めり込み防止）
-            y = canvas.height - ballRadius - paddleBottomMargin - 2;
-            dy = -dy;
-        } else if (y + dy > canvas.height - ballRadius) {
-            // 完全に下に落ちたらゲームオーバー
-            alert("GAME OVER");
-            document.location.reload();
-            return; // ここで処理を止める
-        }
+
+    if(isGameOver) {
+        ctx.fillStyle = "rgba(0,0,0,0.8)";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "red";
+        ctx.textAlign = "center";
+        ctx.font = "bold 40px Arial";
+        ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
+        setTimeout(() => { document.location.reload(); }, 2000);
+        return;
     }
 
-    x += dx;
-    y += dy;
     requestAnimationFrame(draw);
 }
 
-// 画像読み込み設定があるので、ここではdraw()を直接呼ばない
+// 全ての画像が読み込まれたらスタート
+let loadedCount = 0;
+[ballImg, paddleImg, bgImg, clearImg].forEach(img => {
+    img.onload = () => {
+        loadedCount++;
+        if(loadedCount === 4) draw();
+    }
+});
 </script>
 </body>
 </html>
