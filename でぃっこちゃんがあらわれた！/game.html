@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ディッコちゃんと自宅で…</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: "MS Gothic", "Courier New", monospace;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            width: 360px;
+            height: 480px;
+            position: relative;
+            border: 2px solid #fff;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #message-box {
+            height: 80px;
+            padding: 15px;
+            font-size: 18px;
+            line-height: 1.4;
+            border-bottom: 1px solid #444;
+            box-sizing: border-box;
+        }
+
+        #character-area {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #character-image {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            animation: breathe 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes breathe {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-15px); }
+        }
+
+        #button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 10px;
+            padding: 15px;
+            background: #111;
+            height: 140px;
+            box-sizing: border-box;
+        }
+
+        .game-button {
+            background: #222;
+            color: white;
+            border: 2px solid #fff;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .game-button:active { background: #666; transform: scale(0.95); }
+
+        /* スライドショー用コンテナ（画面タップで進行） */
+        #slideshow-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            cursor: pointer; /* タップできることを示す */
+        }
+
+        #slideshow-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+        }
+        
+        #slideshow-image.active { opacity: 1; }
+
+        /* タップを促すガイド表示（任意） */
+        #tap-guide {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="message-box" id="msg">ディッコちゃんがあらわれた！</div>
+    <div id="character-area">
+        <img src="ball.png" id="character-image" alt="キャラ">
+    </div>
+    <div id="button-grid">
+        <div class="game-button" onclick="handleAction('戦う')">戦う</div>
+        <div class="game-button" onclick="handleAction('犯す')">犯す</div>
+        <div class="game-button" onclick="handleAction('デート')">デート</div>
+        <div class="game-button" onclick="handleAction('逃げる')">逃げる</div>
+    </div>
+</div>
+
+<div id="slideshow-container" onclick="showNextSlide()">
+    <img id="slideshow-image" src="">
+    <div id="tap-guide">画面をタップして次へ</div>
+</div>
+
+<script>
+    const msgBox = document.getElementById('message-box');
+    const gameContainer = document.getElementById('game-container');
+    const slideContainer = document.getElementById('slideshow-container');
+    const slideImage = document.getElementById('slideshow-image');
+
+    // ファイル名の自動生成 (001 〜 020)
+    const dateImages = [];
+    for (let i = 1; i <= 20; i++) {
+        const num = i.toString().padStart(3, '0');
+        dateImages.push(`dikkochan202507_${num}.jpg`);
+    }
+
+    const dateFolder = 'date/';
+    let currentSlideIndex = 0;
+
+    function handleAction(action) {
+        switch(action) {
+            case '戦う': msgBox.innerText = "ディッコちゃんは　戦うつもりのようだ！"; break;
+            case '犯す': msgBox.innerText = "ディッコちゃんは　戸惑っている…！"; break;
+            case 'デート': 
+                msgBox.innerText = "ディッコちゃんと楽しい時間を過ごした。その後・・・";
+                // 少しだけ余韻を残してからスライドショー開始
+                setTimeout(startSlideshow, 1500); 
+                break;
+            case '逃げる': msgBox.innerText = "逃げられない！　ディッコちゃんが見つめている。"; break;
+        }
+    }
+
+    function startSlideshow() {
+        gameContainer.style.display = 'none';
+        slideContainer.style.display = 'flex';
+        currentSlideIndex = 0;
+        showNextSlide(); // 最初の1枚を表示
+    }
+
+    // タップされるたびに呼ばれる関数
+    function showNextSlide() {
+        // 全20枚表示し終わったら終了
+        if (currentSlideIndex >= dateImages.length) {
+            endSlideshow();
+            return;
+        }
+
+        // 一旦フェードアウトさせてから切り替え
+        slideImage.classList.remove('active');
+        
+        setTimeout(() => {
+            slideImage.src = dateFolder + dateImages[currentSlideIndex];
+            slideImage.onload = () => slideImage.classList.add('active');
+            currentSlideIndex++;
+        }, 200); // 切り替えのテンポを速めに設定
+    }
+
+    function endSlideshow() {
+        slideContainer.style.display = 'none';
+        gameContainer.style.display = 'flex';
+        msgBox.innerText = "最高の時間を過ごした。";
+    }
+</script>
+</body>
+</html>
