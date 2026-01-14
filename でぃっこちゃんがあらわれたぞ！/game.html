@@ -1,61 +1,249 @@
-// エンド開始処理
-function startEnding(type) {
-    if (isEndingStarted) return;
-    isEndingStarted = true;
-
-    document.getElementById('win-overlay').style.display = 'none';
-    document.getElementById('game-container').style.display = 'none';
-    document.getElementById('slideshow-container').style.display = 'flex';
-
-    slideImages = [];
-    const maxImages = 20; 
-
-    for (let i = 1; i <= maxImages; i++) {
-        const num = i.toString().padStart(3, '0');
-        let path = "";
-        if (type === 'love') {
-            path = `date/dikkochan202507_${num}.jpg`;
-        } else {
-            // スペースやカッコをURL形式に安全に変換
-            path = `tentacles/DIKKOCHAN4_${num} (カスタム).jpg`;
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ディッコちゃんわからせゲーム</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: "MS Gothic", "Courier New", monospace;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        slideImages.push(path);
-    }
-    
-    slideIndex = 0;
-    showNextSlide();
-}
 
-// 次のスライドを表示（エラーハンドリング強化）
-function showNextSlide() {
-    const slideImg = document.getElementById('slideshow-image');
-    if (slideIndex >= slideImages.length) {
-        alert("わからせ完了！");
-        location.reload();
-        return;
-    }
-
-    const targetSrc = slideImages[slideIndex];
-    slideImg.classList.remove('active');
-
-    const tempImg = new Image();
-    tempImg.src = encodeURI(targetSrc); // 日本語やスペースを安全に変換
-
-    tempImg.onload = () => {
-        slideImg.src = tempImg.src;
-        slideImg.classList.add('active');
-        slideIndex++;
-    };
-
-    tempImg.onerror = () => {
-        console.error("画像が見つかりません:", targetSrc);
-        // 画像が1枚なくても、次の番号を試す（進行不能を防止）
-        slideIndex++;
-        if (slideIndex < slideImages.length) {
-            showNextSlide();
-        } else {
-            alert("画像がGitHubに正しく上がっていないようです。");
-            location.reload();
+        #game-container {
+            width: 360px;
+            height: 480px;
+            position: relative;
+            border: 2px solid #fff;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
         }
-    };
-}
+
+        /* ゲージエリア */
+        #status-area {
+            padding: 10px;
+            font-size: 14px;
+            border-bottom: 1px solid #444;
+        }
+        .gauge-container {
+            width: 100%;
+            height: 10px;
+            background: #222;
+            margin: 5px 0 10px 0;
+            border: 1px solid #666;
+        }
+        .gauge-bar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        #sub-bar { background: #f0f; width: 0%; } /* 屈服度 */
+        #ctrl-bar { background: #0f0; width: 40%; } /* 制御力 */
+
+        #message-box {
+            height: 60px;
+            padding: 10px;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        #character-area {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        #character-image {
+            max-width: 80%;
+            max-height: 80%;
+            object-fit: contain;
+            animation: breathe 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes breathe {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-10px); }
+        }
+
+        /* 2x2ボタン */
+        #button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 8px;
+            padding: 10px;
+            background: #111;
+            height: 120px;
+        }
+
+        .game-button {
+            background: #222;
+            color: white;
+            border: 2px solid #fff;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        /* わからせ成功オーバーレイ */
+        #success-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 100;
+        }
+
+        #success-title {
+            color: #f0f;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #f0f;
+        }
+
+        #success-choices {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .choice-button {
+            width: 140px;
+            height: 100px;
+            background: #333;
+            border: 2px solid #fff;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            z-index: 200; /* ボタンを最前面に */
+            pointer-events: auto; /* タップを確実に許可 */
+        }
+
+        /* スライドショー */
+        #slideshow-container {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #slide-img {
+            max-width: 100%;
+            max-height: 100%;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        #slide-img.active { opacity: 1; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="status-area">
+        ディッコちゃんの屈服度: <span id="sub-val">0</span>%
+        <div class="gauge-container"><div id="sub-bar" class="gauge-bar"></div></div>
+        お前の触手制御力: <span id="ctrl-val">21</span>
+        <div class="gauge-container"><div id="ctrl-bar" class="gauge-bar"></div></div>
+    </div>
+
+    <div id="message-box">ディッコちゃんがあらわれた！</div>
+
+    <div id="character-area">
+        <img src="ball.png" id="character-image">
+        
+        <div id="success-overlay">
+            <div id="success-title">わからせ成功！</div>
+            <div>ディッコちゃんは完全に無力化された。<br>どうしてあげる？</div>
+            <div id="success-choices">
+                <button class="choice-button" onclick="startSlideshow()">触手牢屋へ<br>放り込む</button>
+                <button class="choice-button" onclick="startSlideshow()">いっぱい<br>愛してあげる</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="button-grid">
+        <button class="game-button" onclick="handleAction('戦う')">戦う</button>
+        <button class="game-button" onclick="handleAction('犯す')">犯す</button>
+        <button class="game-button" onclick="handleAction('デート')">デート</button>
+        <button class="game-button" onclick="handleAction('逃げる')">逃げる</button>
+    </div>
+</div>
+
+<div id="slideshow-container" onclick="nextSlide()">
+    <img id="slide-img" src="">
+</div>
+
+<script>
+    const msgBox = document.getElementById('message-box');
+    const successOverlay = document.getElementById('success-overlay');
+    const slideContainer = document.getElementById('slideshow-container');
+    const slideImg = document.getElementById('slide-img');
+
+    // 画像リスト生成 (001〜020)
+    const images = Array.from({length: 20}, (_, i) => `date/dikkochan202507_${(i+1).toString().padStart(3, '0')}.jpg`);
+    let slideIdx = 0;
+
+    function handleAction(action) {
+        if (action === '犯す') {
+            msgBox.innerText = "触手で強く締め上げた！";
+            // 演出として屈服度を上げる
+            document.getElementById('sub-bar').style.width = "100%";
+            document.getElementById('sub-val').innerText = "100";
+            
+            // 1秒後に成功画面を表示
+            setTimeout(() => {
+                successOverlay.style.display = 'flex';
+            }, 1000);
+        } else if (action === 'デート') {
+            msgBox.innerText = "自宅に招いた…";
+            setTimeout(startSlideshow, 1000);
+        } else {
+            msgBox.innerText = `ディッコちゃんに ${action} を仕掛けた！`;
+        }
+    }
+
+    function startSlideshow() {
+        successOverlay.style.display = 'none';
+        slideContainer.style.display = 'flex';
+        slideIdx = 0;
+        nextSlide();
+    }
+
+    function nextSlide() {
+        if (slideIdx >= images.length) {
+            slideContainer.style.display = 'none';
+            msgBox.innerText = "わからせ完了。";
+            return;
+        }
+        slideImg.classList.remove('active');
+        setTimeout(() => {
+            slideImg.src = images[slideIdx];
+            slideImg.onload = () => slideImg.classList.add('active');
+            slideIdx++;
+        }, 200);
+    }
+</script>
+</body>
+</html>
