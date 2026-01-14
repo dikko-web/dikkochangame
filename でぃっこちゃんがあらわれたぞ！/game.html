@@ -1,208 +1,50 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>触手 vs メスガキディッコ</title>
-    <style>
-        body { margin: 0; background: #000; color: #fff; font-family: "MS Gothic", monospace; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        #game-container { width: 360px; height: 480px; position: relative; border: 2px solid #fff; display: flex; flex-direction: column; background: #000; }
-        
-        #status-area { padding: 10px; border-bottom: 2px solid #fff; background: #111; font-size: 14px; }
-        .bar-bg { width: 100%; height: 8px; background: #333; border: 1px solid #fff; margin: 4px 0 8px 0; }
-        #enemy-hp-fill { width: 100%; height: 100%; background: #f0f; transition: 0.3s; }
-        #player-st-fill { width: 100%; height: 100%; background: #0f0; transition: 0.3s; }
+/* オーバーレイ：Z-indexを整理し、確実にタップを許可 */
+.overlay { 
+    display: none; 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.95); 
+    z-index: 9000; /* 重ね順を調整 */
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    text-align: center;
+    pointer-events: auto; /* タップを強制的に有効化 */
+}
 
-        #message-box { height: 90px; padding: 12px; font-size: 15px; border-bottom: 1px solid #444; box-sizing: border-box; background: #050505; overflow-y: auto; }
-        
-        #character-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; }
-        #character-image { max-width: 85%; max-height: 85%; object-fit: contain; animation: breathe 3s ease-in-out infinite alternate; }
-        
-        @keyframes breathe { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
-        @keyframes shake { 0% { transform: translate(-5px,0); } 100% { transform: translate(5px,0); } }
+/* スライドショー：オーバーレイよりさらに上に */
+#slideshow-container { 
+    display: none; 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: #000; 
+    justify-content: center; 
+    align-items: center; 
+    z-index: 10000; 
+    cursor: pointer; 
+    pointer-events: auto;
+}
 
-        /* ボタンのタップ反応を改善 */
-        .game-button { 
-            background: #222; color: white; border: 1px solid #fff; border-radius: 4px; 
-            font-size: 16px; font-weight: bold; cursor: pointer; 
-            display: flex; justify-content: center; align-items: center;
-            -webkit-tap-highlight-color: transparent; /* タップ時の青枠を消す */
-            pointer-events: auto; /* 確実にタップ可能にする */
-        }
-        .game-button:active { background: #555; }
-        .game-button:disabled { color: #555; border-color: #444; }
-
-        /* オーバーレイのZ-indexを大幅に上げる */
-        .overlay { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); z-index: 9999; /* 最前面へ */
-            flex-direction: column; justify-content: center; align-items: center; text-align: center;
-            pointer-events: auto;
-        }
-        
-        #slideshow-container { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; justify-content: center; align-items: center; 
-            z-index: 10000; /* 選択画面よりもさらに前 */
-            cursor: pointer; 
-            pointer-events: auto;
-        }
-        #slideshow-image { max-width: 100%; max-height: 100%; object-fit: contain; opacity: 0; transition: opacity 0.4s; }
-        #slideshow-image.active { opacity: 1; }
-    </style>
-</head>
-<body>
-
-<div id="game-container">
-    <div id="status-area">
-        ディッコちゃんの屈服度: <span id="e-hp-val">100</span>%
-        <div class="bar-bg"><div id="enemy-hp-fill"></div></div>
-        お前の触手制御力: <span id="p-st-val">100</span>
-        <div class="bar-bg"><div id="player-st-fill"></div></div>
-    </div>
-    <div id="message-box">「う、うわっ…何よこのヌルヌルしたやつ！<br>やめなさいよ！変態！」</div>
-    <div id="character-area">
-        <img src="ball.png" id="character-image">
-    </div>
-    <div id="button-grid" style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; padding: 12px; background: #111; height: 130px;">
-        <button class="game-button" onclick="battleAction('bind')">触手拘束</button>
-        <button class="game-button" onclick="battleAction('caress')">ヌルヌル愛撫</button>
-        <button class="game-button" onclick="battleAction('tighten')">締め上げる</button>
-        <button class="game-button" onclick="battleAction('threat')">脅す</button>
-    </div>
-</div>
-
-<div id="lose-overlay" class="overlay">
-    <h1 style="color: red; font-size: 32px;">制御失敗…</h1>
-    <p id="lose-msg" style="padding: 20px;">「あはは！触手すら操れないの？<br>本当、無様で笑っちゃう♡」</p>
-    <button class="game-button" style="width: 150px; height: 50px;" onclick="location.reload()">再挑戦</button>
-</div>
-
-<div id="win-overlay" class="overlay">
-    <h1 style="color: #f0f; font-size: 32px;">わからせ成功！</h1>
-    <p>ディッコちゃんは完全に無力化された。<br>どうしてあげる？</p>
-    <div style="display: flex; gap: 20px; margin-top: 20px;">
-        <button class="game-button" style="padding: 20px;" onmousedown="startEnding('jail')" ontouchstart="startEnding('jail')">触手牢屋へ<br>放り込む</button>
-        <button class="game-button" style="padding: 20px;" onmousedown="startEnding('love')" ontouchstart="startEnding('love')">いっぱい<br>愛してあげる</button>
-    </div>
-</div>
-
-<div id="slideshow-container" onmousedown="showNextSlide()" ontouchstart="showNextSlide()">
-    <img id="slideshow-image">
-    <div style="position: absolute; bottom: 20px; color: rgba(255,255,255,0.5);">タップで次へ</div>
-</div>
-
-<script>
-    let enemyHP = 100;
-    let playerST = 100;
-    let slideImages = [];
-    let slideIndex = 0;
-    let isEndingStarted = false; // 重複クリック防止
-
-    function battleAction(type) {
-        if (enemyHP <= 0 || playerST <= 0) return;
-        disableButtons(true);
-        let eDmg = 0; let pCost = 0; let pRec = 0; let msg = "";
-
-        switch(type) {
-            case 'bind': eDmg = 15; pCost = 10; msg = "触手で手足を縛り上げた！<br>「は、離しなさいよ！バカ！」"; break;
-            case 'caress': eDmg = 5; pRec = 30; msg = "執拗にヌルヌルと愛撫した。<br>触手の制御力が回復していく…"; break;
-            case 'tighten': eDmg = 30; pCost = 25; msg = "触手で強く締め上げた！<br>「あ、あぐっ！？ 苦し…離してぇ…」"; break;
-            case 'threat':
-                if (Math.random() > 0.4) { eDmg = 40; pCost = 10; msg = "恐怖で心を折りにいった！<br>「う、嘘でしょ…そんな、本気なの…？」"; }
-                else { pCost = 15; msg = "「全然怖くないもんねー！」<br>ディッコちゃんはまだ強気だ。"; }
-                break;
-        }
-
-        enemyHP = Math.max(0, enemyHP - eDmg);
-        playerST = Math.max(0, Math.min(100, playerST - pCost + pRec));
-        updateUI(msg);
-
-        if (enemyHP <= 0) {
-            setTimeout(() => {
-                document.getElementById('win-overlay').style.display = 'flex';
-            }, 1000);
-        } else {
-            setTimeout(enemyTurn, 1000);
-        }
-    }
-
-    function enemyTurn() {
-        let pDmg = 10 + Math.floor(Math.random() * 20);
-        let msg = "";
-        const r = Math.random();
-        if (r > 0.6) { msg = "「ざぁ～こ♡ 触手に操られてるんじゃない？」<br>煽られて制御力が乱れる！"; }
-        else { msg = "ディッコちゃんが激しく暴れた！<br>触手の維持に精神を削られる！"; }
-        playerST = Math.max(0, playerST - pDmg);
-        updateUI(msg, true);
-        if (playerST <= 0) { setTimeout(() => document.getElementById('lose-overlay').style.display = 'flex', 1000); }
-        else { disableButtons(false); }
-    }
-
-    function updateUI(msg, isEnemy = false) {
-        document.getElementById('e-hp-val').innerText = enemyHP;
-        document.getElementById('enemy-hp-fill').style.width = enemyHP + "%";
-        document.getElementById('p-st-val').innerText = playerST;
-        document.getElementById('player-st-fill').style.width = playerST + "%";
-        document.getElementById('message-box').innerHTML = msg;
-        const char = document.getElementById('character-image');
-        if (isEnemy) { char.style.transform = "scale(1.1) rotate(5deg)"; setTimeout(() => char.style.transform = "scale(1.0)", 200); }
-        else { char.style.animation = "shake 0.1s infinite"; setTimeout(() => char.style.animation = "breathe 3s ease-in-out infinite alternate", 500); }
-    }
-
-    function disableButtons(bool) {
-        const btns = document.getElementsByClassName('game-button');
-        for (let b of btns) b.disabled = bool;
-    }
-
-    function startEnding(type) {
-        if (isEndingStarted) return;
-        isEndingStarted = true;
-
-        document.getElementById('win-overlay').style.display = 'none';
-        document.getElementById('game-container').style.display = 'none';
-        document.getElementById('slideshow-container').style.display = 'flex';
-
-        slideImages = [];
-        const maxImages = 20; 
-
-        if (type === 'love') {
-            for (let i = 1; i <= maxImages; i++) {
-                const num = i.toString().padStart(3, '0');
-                slideImages.push(`date/dikkochan202507_${num}.jpg`);
-            }
-        } else {
-            for (let i = 1; i <= maxImages; i++) {
-                const num = i.toString().padStart(3, '0');
-                slideImages.push(`tentacles/DIKKOCHAN4_${num} (カスタム).jpg`);
-            }
-        }
-        
-        slideIndex = 0;
-        showNextSlide();
-    }
-
-    function showNextSlide() {
-        const slideImg = document.getElementById('slideshow-image');
-        if (slideIndex >= slideImages.length) {
-            alert("ディッコちゃんを存分にわからせました。");
-            location.reload();
-            return;
-        }
-        slideImg.classList.remove('active');
-        
-        const tempImg = new Image();
-        tempImg.src = slideImages[slideIndex];
-        tempImg.onload = () => {
-            slideImg.src = tempImg.src;
-            slideImg.classList.add('active');
-            slideIndex++;
-        };
-        tempImg.onerror = () => {
-            alert("全ての画像を表示しました。");
-            location.reload();
-        };
-    }
-</script>
-</body>
-</html>
+/* ボタン：最前面でタップに反応するように */
+.game-button { 
+    background: #222; 
+    color: white; 
+    border: 1px solid #fff; 
+    border-radius: 4px; 
+    font-size: 16px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    pointer-events: auto;
+    position: relative;
+    z-index: 9001; /* 親要素のoverlayより上に */
+    -webkit-tap-highlight-color: transparent;
+}
