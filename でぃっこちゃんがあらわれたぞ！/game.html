@@ -8,31 +8,35 @@
         body { margin: 0; background: #000; color: #fff; font-family: "MS Gothic", monospace; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
         #game-container { width: 360px; height: 480px; position: relative; border: 2px solid #fff; display: flex; flex-direction: column; background: #000; }
         
-        /* ステータスエリア */
         #status-area { padding: 10px; border-bottom: 2px solid #fff; background: #111; font-size: 14px; }
         .bar-bg { width: 100%; height: 8px; background: #333; border: 1px solid #fff; margin: 4px 0 8px 0; }
         #enemy-hp-fill { width: 100%; height: 100%; background: #f0f; transition: 0.3s; }
         #player-st-fill { width: 100%; height: 100%; background: #0f0; transition: 0.3s; }
 
-        /* メッセージ */
         #message-box { height: 90px; padding: 12px; font-size: 14px; border-bottom: 1px solid #444; box-sizing: border-box; background: #050505; overflow-y: auto; line-height: 1.4; }
         
-        /* キャラクター */
         #character-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; }
         #character-image { max-width: 85%; max-height: 85%; object-fit: contain; animation: breathe 3s ease-in-out infinite alternate; }
         
         @keyframes breathe { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
         @keyframes shake { 0% { transform: translate(-5px,0); } 100% { transform: translate(5px,0); } }
 
-        /* 操作ボタン */
+        /* バトル操作ボタン */
         #button-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; padding: 12px; background: #111; height: 130px; }
         .game-button { background: #222; color: white; border: 1px solid #fff; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
-        .game-button:active { background: #555; }
         .game-button:disabled { color: #555; border-color: #444; opacity: 0.6; cursor: not-allowed; }
 
-        /* オーバーレイ（リザルト画面） */
+        /* オーバーレイ */
         .overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         
+        /* ★重要：オーバーレイ専用ボタン（バトルのロックに影響されない） */
+        .overlay-button { 
+            background: #222; color: white; border: 2px solid #fff; border-radius: 8px; 
+            font-size: 16px; font-weight: bold; cursor: pointer; padding: 15px; margin: 10px;
+            z-index: 1100; pointer-events: auto; /* タップを確実に許可 */
+        }
+        .overlay-button:active { background: #666; }
+
         /* スライドショー */
         #slideshow-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; justify-content: center; align-items: center; z-index: 2000; cursor: pointer; }
         #slideshow-image { max-width: 100%; max-height: 100%; object-fit: contain; opacity: 0; transition: opacity 0.4s; }
@@ -56,15 +60,15 @@
         <div id="lose-overlay" class="overlay">
             <h1 style="color: red; font-size: 32px;">制御失敗…</h1>
             <p style="padding: 20px;">「あはは！触手すら操れないの？<br>本当、無様で笑っちゃう♡」</p>
-            <button class="game-button" style="width: 150px; height: 50px;" onclick="location.reload()">再挑戦</button>
+            <button class="overlay-button" onclick="location.reload()">再挑戦</button>
         </div>
 
         <div id="win-overlay" class="overlay">
             <h1 style="color: #f0f; font-size: 32px;">わからせ成功！</h1>
             <p>ディッコちゃんは完全に無力化された。<br>どうしてあげる？</p>
-            <div style="display: flex; gap: 15px; margin-top: 20px;">
-                <button class="game-button" style="padding: 15px;" onclick="startEnding('jail')">触手牢屋へ<br>放り込む</button>
-                <button class="game-button" style="padding: 15px;" onclick="startEnding('love')">いっぱい<br>愛してあげる</button>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="overlay-button" onclick="startEnding('jail')">触手牢屋へ<br>放り込む</button>
+                <button class="overlay-button" onclick="startEnding('love')">いっぱい<br>愛してあげる</button>
             </div>
         </div>
     </div>
@@ -88,19 +92,18 @@
     let slideImages = [];
     let slideIndex = 0;
 
-    // バトル処理
     function battleAction(type) {
         if (enemyHP <= 0 || playerST <= 0) return;
         disableButtons(true);
         let eDmg = 0; let pCost = 0; let pRec = 0; let msg = "";
 
         switch(type) {
-            case 'bind': eDmg = 15; pCost = 10; msg = "触手で手足を縛り上げた！<br>「は、離しなさいよ！バカ！」"; break;
-            case 'caress': eDmg = 5; pRec = 30; msg = "執拗にヌルヌルと愛撫した。<br>触手の制御力が回復していく…"; break;
-            case 'tighten': eDmg = 30; pCost = 25; msg = "触手で強く締め上げた！<br>「あ、あぐっ！？ 苦し…離してぇ…」"; break;
-            case 'threat':
-                if (Math.random() > 0.4) { eDmg = 40; pCost = 10; msg = "恐怖で心を折りにいった！<br>「う、嘘でしょ…そんな、本気なの…？」"; }
-                else { pCost = 15; msg = "「全然怖くないもんねー！」<br>ディッコちゃんはまだ強気だ。"; }
+            case 'bind': eDmg = 15; pCost = 10; msg = "触手で手足を縛り上げた！"; break;
+            case 'caress': eDmg = 5; pRec = 30; msg = "執拗にヌルヌルと愛撫した。"; break;
+            case 'tighten': eDmg = 30; pCost = 25; msg = "触手で強く締め上げた！"; break;
+            case 'threat': 
+                if (Math.random() > 0.4) { eDmg = 40; pCost = 10; msg = "恐怖で心を折りにいった！"; }
+                else { pCost = 15; msg = "ディッコちゃんはまだ強気だ。"; }
                 break;
         }
 
@@ -110,8 +113,10 @@
 
         if (enemyHP <= 0) {
             setTimeout(() => {
-                disableButtons(false); // ボタンを有効化してから表示
+                document.getElementById('button-grid').style.display = 'none';
                 document.getElementById('win-overlay').style.display = 'flex';
+                // 念のため全てのロックを解除
+                disableButtons(false);
             }, 1000);
         } else {
             setTimeout(enemyTurn, 1000);
@@ -120,17 +125,14 @@
 
     function enemyTurn() {
         let pDmg = 10 + Math.floor(Math.random() * 20);
-        let msg = (Math.random() > 0.6) ? 
-            "「ざぁ～こ♡ 触手に操られてるんじゃない？」<br>煽られて制御力が乱れる！" : 
-            "ディッコちゃんが激しく暴れた！<br>触手の維持に精神を削られる！";
-        
         playerST = Math.max(0, playerST - pDmg);
-        updateUI(msg, true);
+        updateUI("ディッコちゃんの抵抗！", true);
         
         if (playerST <= 0) {
             setTimeout(() => {
-                disableButtons(false);
+                document.getElementById('button-grid').style.display = 'none';
                 document.getElementById('lose-overlay').style.display = 'flex';
+                disableButtons(false);
             }, 1000);
         } else {
             disableButtons(false);
@@ -149,30 +151,20 @@
     }
 
     function disableButtons(bool) {
+        // game-button クラスだけを無効化（overlay-button は無効化しない）
         const btns = document.getElementsByClassName('game-button');
         for (let b of btns) b.disabled = bool;
     }
 
-    // スライドショー開始
-// エンド開始処理
     function startEnding(type) {
         document.getElementById('win-overlay').style.display = 'none';
         document.getElementById('game-container').style.display = 'none';
         document.getElementById('slideshow-container').style.display = 'flex';
-
         slideImages = [];
-        const maxPages = 51; // 最大51ページまで
-        
-        // フォルダ名の指定（ご要望に合わせて tentacles に固定）
-        // type が 'love' なら 'date'、それ以外（jail）なら 'tentacles' を使用
         const folder = (type === 'love') ? 'date' : 'tentacles'; 
-
-        for (let i = 1; i <= maxPages; i++) {
-            // 001, 002... の形式でファイル名を作成
-            const num = i.toString().padStart(3, '0');
-            slideImages.push(`${folder}/${num}.jpg`);
+        for (let i = 1; i <= 51; i++) {
+            slideImages.push(`${folder}/${i.toString().padStart(3, '0')}.jpg`);
         }
-        
         slideIndex = 0;
         showNextSlide();
     }
@@ -180,26 +172,19 @@
     function showNextSlide() {
         const slideImg = document.getElementById('slideshow-image');
         if (slideIndex >= slideImages.length) {
-            alert("ディッコちゃんを存分にわからせました。");
+            alert("全てのシーンを表示しました。");
             location.reload();
             return;
         }
-
         slideImg.classList.remove('active');
         const tempImg = new Image();
         tempImg.src = slideImages[slideIndex];
-        
         tempImg.onload = () => {
             slideImg.src = tempImg.src;
             slideImg.classList.add('active');
             slideIndex++;
         };
-        tempImg.onerror = () => {
-            // 画像が途切れた場合は終了
-            console.log("読み込み終了: " + slideImages[slideIndex]);
-            alert("全ての画像を表示しました。");
-            location.reload();
-        };
+        tempImg.onerror = () => { location.reload(); };
     }
 </script>
 </body>
