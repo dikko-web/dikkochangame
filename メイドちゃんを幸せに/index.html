@@ -282,43 +282,92 @@
     const DIALOGUES = {
         sayo: {
             pitch: 0.7,
-            morning: ["おはようございます、{m}。……あ、いえ、私は捨てられた身。何でも命じてください。", "……夢を見ていました。あなたが私をまた捨てる夢を。", "朝食ですね。あなたに捨てられないよう、心を込めて作りました。"],
-            talk: ["私はあなたの所有物です。……他の方を見ないでください。私だけを、見ていてほしいのです。", "掃除も洗濯も、完璧にこなします。ですから……ずっと側に置いてください。", "奴隷市場では、ただ死を待つだけでした。光をくれたのは、{m}……あなただけです。"],
-            pat: ["……ぁ、温かい。……もっと、もっと撫でてください。不安なのです。", "私が……嬉しいと思ってもいいのでしょうか。捨てられたゴミだった、この私が……。"],
-            pat_nude: ["ぁ……裸の私を、そんなに慈しんでくださるなんて……。私は、あなたの物です……。"],
-            service: ["お疲れですか、{m}？ 私の存在意義は、{m}に尽くすことだけです。"],
-            service_nude: ["裸で、あなたにお仕えする……。これこそが、捨てられた私の真実の姿。"],
+            morning: [
+                "おはようございます、{m}。……あ、いえ、私は捨てられた身。何でも命じてください。",
+                "……夢を見ていました。あなたが私をまた捨てる夢を。……今は、ここに居てもいいのですね？",
+                "朝食ですね。あなたに捨てられないよう、心を込めて作りました。",
+                "{m}……今朝も、私の隣にいてくださって嬉しいです。……夢じゃ、ないんですよね？"
+            ],
+            talk: [
+                "私はあなたの所有物です。……他の方を見ないでください。私だけを、見ていてほしいのです。",
+                "掃除も洗濯も、完璧にこなします。ですから……ずっと側に置いてください。",
+                "{m}、もし私が役に立たなくなったら……その時は、殺してください。他の誰かに渡されるのは、耐えられません。",
+                "……あなたの匂いがするこの屋敷が、私にとっての世界のすべてです。",
+                "奴隷市場では、ただ死を待つだけでした。光をくれたのは、{m}……あなただけです。"
+            ],
+            pat: [
+                "……ぁ、温かい。……もっと、もっと撫でてください。あなたの手の温もりがないと、不安なのです。",
+                "私が……嬉しいと思ってもいいのでしょうか。捨てられたゴミだった、この私が……。",
+                "……離さないでくださいね？ 絶対に。絶対に……。",
+                "あなたの手の跡が残るくらい……もっと、強く触れてくださっても良いのですよ？"
+            ],
+            pat_nude: [
+                "ぁ……裸の私を、そんなに慈しんでくださるなんて……。私は、あなたの物です……。",
+                "……もっと、撫でてください。あなたの手の届かない場所なんてありません。"
+            ],
+            service: [
+                "お疲れですか、{m}？ 汚れた場所はありませんか？ 私の視界に映るすべてを、私が清めて差し上げます。",
+                "私の存在意義は、{m}に尽くすことだけです。……どうか、私を使い潰してください。",
+                "膝枕……よろしいのですか？ ……あぁ、嬉しい。こうしてあなたの重みを感じられるのが、一番のご奉仕です。"
+            ],
+            service_nude: ["裸で、あなたにお仕えする……。これこそが、捨てられた私の真実の姿。……どうぞ、何なりと。"],
             dress_nude: "……あ、裸、ですか……？ わかりました。……少し恥ずかしいですが、すべてをさらけ出します。",
             dress_normal: "メイド服を……。ありがとうございます。背中のリボン、結んでいただけますか？",
-            h_kiss: ["ん……っ。マスターの唇……とても熱くて、蕩けてしまいそうです……。", "……ん、ちゅ。もっと……もっと慈しんでください。"],
-            h_breast: ["ぁ……胸、触られるの……好きです。あなたの手の重みを、もっと刻んでください。"],
-            h_clit: ["ひゃあぁっ！ そこ……っ、そこはダメ……あ、あぁぁ！ 脳が、真っ白に……っ！"],
-            h_finger: ["……指、入ってきました。私の中を、あなたの形に作り変えて……もっと深く……っ！"],
-            h_insert: "あぁ……っ、あつい……。{m}の熱いところが、私を塗り潰してぇ！",
-            h_naka_1: "あぁっ！ 溢れる……マスターの、熱いのが……っ！ 私は、あなたのものです……！",
+            h_kiss: ["ん……っ。マスターの唇……とても熱くて、蕩けてしまいそうです……。", "……ん、ちゅ。もっと……もっと慈しんでください。私は、あなたの所有物なのですから。"],
+            h_breast: ["ぁ……胸、触られるの……好きです。あなたの手の重みを、もっと刻んでください。", "……っ！ 乳房まで、あなたのものに。……嬉しいです。汚してください、マスター。"],
+            h_clit: ["ひゃあぁっ！ そこ……っ、そこはダメ……あ、あぁぁ！ 脳が、真っ白に……っ！", "……っ、あ。敏感なところ……マスターに、全部、握られて……ふぁあ！"],
+            h_finger: ["……指、入ってきました。私の中を、あなたの形に作り変えて……もっと深く……っ！", "あぁぁっ！ 指だけで……こんな……。私をめちゃくちゃにしてください！"],
+            h_insert: "あぁ……っ、あつい……。{m}の熱いところが、私の中を、壊していくみたいで……っ！",
+            h_naka_1: "あぁっ！ 溢れる……マスターの、熱いのが……っ！ これで私は、あなたのものです……！",
             h_naka_repeat: "ひゃぁぁぁっ！ また、きた……っ！ 嬉しい……もっと中を汚して……私を塗り潰してぇ！",
             h_bukkake: "んっ、ぁ……。外に……勿体ないけれど、あなたの汚れなら、私、誇らしいです……。",
             h_faint: "……ぁ……あ……。……す、き……ます、た……（サヨは意識を失いました）",
-            after_h: ["……はぁ、はぁ。……嬉しい。あなたの種で、私が満たされていく。"],
-            out_anu: ["アヌ「あら、サヨさん。今日もご主人様にべったりね。」", "サヨ「はい。私は{m}に救われた身ですから、一生離れるつもりはありません。」"],
-            out_chief: ["メイド長「サヨさん、お仕事はどう？ 顔色が良くなったようで安心したわ。」", "サヨ「はい。{m}が毎日、私に役割と……愛をくださるおかげです。」"],
-            out_momoki: ["ももき「わぁ、サヨちゃん、今日もご主人様にべったり！ 羨ましいなー。」", "ももき「いいなー！ 帰ったらももきもご主人様にいっぱい愛してもらお！ 負けないんだから！」"],
-            out_homu: ["ほむ「今日もご主人様とお散歩ですか？ 仲が良いな！」", "サヨ「ええ、{m}と一緒なら、どこへ行っても天国のように感じます。」", "ほむ「うむ。信頼できる主に命を捧げる。それこそが我らの道よな」"]
+            after_h: ["……はぁ、はぁ。……嬉しい。あなたの種で、私が満たされていく。……私はあなたのモノです。"],
+            out_anu: ["アヌ「あら、サヨさん。今日もご主人様にべったりね。相変わらず一途なんだから。」", "サヨ「アヌさん……。べったりなのは当然です。私は、{m}に救われた身ですから。」", "アヌ「ふふっ、その執着心、ちょっと羨ましいわね。私ももっと甘え上手にならなくちゃ。」"],
+            out_chief: ["メイド長「サヨさん、お仕事の調子はどうかしら？ 顔色が良くなったようで安心したわ。」", "サヨ「メイド長。ありがとうございます。{m}が毎日、私に役割と……愛をくださるおかげです。」", "メイド長「ふふ、そうね。あなたが幸せそうで何よりよ。主人のために頑張るのよ？」"],
+            out_momoki: ["ももき「わぁ、サヨちゃん、今日もご主人様にべったり！ 羨ましいなー。」", "サヨ「ももきさん……。はい、{m}は私のすべてですから。」", "ももき「いいなー！ 帰ったらももきもご主人様にいっぱい愛してもらお！ 負けないんだから！」"],
+            out_homu: ["ほむ「今日もご主人様とお散歩ですか？ 仲が良いな！」", "サヨ「ほむさん。ええ、{m}と一緒なら、どこへ行っても天国のように感じます。」", "ほむ「うむ。信頼できる主（あるじ）に命を捧げる。それこそが、我ら異種族が生き残る唯一の道よな」"]
         },
         kokoa: {
             pitch: 1.3,
-            morning: ["……ん。……捨てられてない。……よかった。……おはよ、{m}。", "……朝。……光がまぶしい。……あなたの影に、隠れさせて……？"],
-            talk: ["……ねぇ、私のこと……好き？ ……嫌いになったら、その場で殺してね。", "……言葉、へただけど。……あなたがいれば、それだけでいい。", "……{m}がいないと、息ができない。……ほんとだよ？"],
-            pat: ["……んぅ。……これ、だいすき。……もっと、強く。跡が残るくらい……。", "……えへへ。……私はあなたのペット。……ずっと、飼っててね。"],
-            pat_nude: ["……ん。……裸、触られるの、気持ちいい……。……もっと。……いっぱい。……ぐちゃぐちゃにして。"],
-            service: ["……ご奉仕、する。……何がいい？ ……抱っこ？ ……耳のお掃除……？"],
+            morning: [
+                "……ん。……捨てられてない。……よかった。……おはよ、{m}。",
+                "……お腹、すいた。……あなたが食べさせて。……じゃないと、食べない。",
+                "……朝。……光がまぶしい。……あなたの影に、隠れさせて……？",
+                "……おはよう。……今日も、私のこと……見ててくれる？"
+            ],
+            talk: [
+                "……ねぇ、私のこと……好き？ ……嫌いになったら、その場で殺してね。",
+                "……他の女の人の匂いがする。……嫌。……私だけを、嗅いで。",
+                "……言葉、へただけど。……あなたがいれば、それだけでいい。",
+                "……屋敷の外、行きたくない。……ここで、二人だけで、腐っていきたい……。",
+                "……私、元々は商品にもならないゴミだったの。……拾ってくれて、ありがと……。",
+                "……{m}がいないと、息ができない。……ほんとだよ？",
+                "……私の首に、鎖をつけて。……あなたが持っていて。"
+            ],
+            pat: [
+                "……んぅ。……これ、だいすき。……もっと、強く。跡が残るくらい……。",
+                "……えへへ。……私はあなたのペット。……ずっと、飼っててね。",
+                "……なでてくれないと、死んじゃう。……ほんとだよ？",
+                "……ん。……もっと。……もっと、ぐちゃぐちゃにして……。",
+                "……あつい。……{m}の手、溶けそう……。"
+            ],
+            pat_nude: [
+                "……ん。……裸、触られるの、気持ちいい……。……もっと。……いっぱい。……ぐちゃぐちゃにして。",
+                "……{m}の手、あつい。……裸、すき。……あなたのペット、だから。"
+            ],
+            service: [
+                "……ご奉仕、する。……何がいい？ ……抱っこ？ ……それとも、耳のお掃除……？",
+                "……{m}が喜ぶこと、いっぱいしたい。……捨てられないように、頑張るから。",
+                "……疲れてるの？ ……じゃあ、私がぎゅーってしてあげる。……これが一番、ご奉仕になるでしょ？"
+            ],
             service_nude: ["……裸、楽。……あなたも、脱ぐ……？ ……私が、脱がしてあげる。"],
             dress_nude: "……裸？ ……いいよ。……ほら。……全部、見て。……触って。",
             dress_normal: "……服。……ちょっと、寂しい。……また、すぐに脱がせてね？",
-            h_kiss: ["ん……ちゅ。……おいしい。……{m}の味、全部、飲み込みたい……。"],
-            h_breast: ["……ん。……胸、いっぱい触って。……これ、{m}のものだもん。"],
-            h_clit: ["ひゃんっ！ ……そこ、へんな感じ……っ。……あつい、あついよ……！"],
-            h_finger: ["……なか。……ごりごり、する。……マスターの指、すごい。……もっと奥まで。"],
+            h_kiss: ["ん……ちゅ。……おいしい。……{m}の味、全部、飲み込みたい……。", "……ん、ぷは。……もっと。もっと、ちゅーして。……寂しいの。"],
+            h_breast: ["……ん。……胸、いっぱい触って。……これ, {m}のものだもん。", "……ぁ。……大きく、なっちゃう。……はずかしい。……苦しい。……でも、すき。"],
+            h_clit: ["ひゃんっ！ ……そこ、へんな感じ……っ。……あつい、あついよ……！", "……んぅ！ ……いっちゃう。……こわれる。……もっと、いじめて……。"],
+            h_finger: ["……なか。……ごりごり、する。……マスターの指、すごい。……もっと奥まで。", "ぁ……んっ！ ……なか、あつい。……ぐちゃぐちゃに、混ぜて……。"],
             h_insert: "……ん。……すご, いの……。……私の中, 全部、{m}で埋まった……。",
             h_naka_1: "ぁ……んっ！ ……でた。あったかい。……逃がさない。これ、私の宝物にする。",
             h_naka_repeat: "ふぁ……っ！？ ……また……だ。……すごい、いっぱい。ぐちゃぐちゃにして……。",
@@ -442,7 +491,7 @@
 
     function handleBed() {
         if(state.love >= 20){
-            const lines = ["……あの、捨てないで。","私をめちゃくちゃにして、あなたの所有物だと刻んでください……。"];
+            const lines = state.maidType === 'sayo' ? ["……あの、捨てないで。","私をめちゃくちゃにして、あなたの所有物だと刻んでください……。"] : ["……ねぇ。……もっと、あなたを感じたい。","……壊れるくらい、全部。"];
             document.getElementById('side-menu').style.visibility="hidden";
             let lIdx=0;
             const seq = () => {
@@ -469,32 +518,41 @@
         const char=document.getElementById('char-layer');
         char.src=`${state.maidType}_${act}.jpg`; char.onerror=()=>{char.src=ASSETS.maid[state.maidType+"_h"]; char.onerror=null;};
         let cost = 10; let msg = ""; const d = DIALOGUES[state.maidType];
+
         if(act==='kiss'){ cost=-15; msg = `${state.maidName}「${getDialogue('h_kiss')}」`; }
         else if(act==='breast'){ cost=10; msg = `${state.maidName}「${getDialogue('h_breast')}」`; }
         else if(act==='clit'){ cost=12; msg = `${state.maidName}「${getDialogue('h_clit')}」`; }
         else if(act==='finger'){ cost=15; msg = `${state.maidName}「${getDialogue('h_finger')}」`; }
-        else if(act==='insert'){ cost=20; msg=`${state.maidName}「${d.h_insert}」`; playSE('se_insert'); document.getElementById('btn-naka').classList.remove('hidden'); document.getElementById('btn-bukkake').classList.remove('hidden'); }
+        else if(act==='insert'){ cost=20; msg=`${state.maidName}「${getDialogue('h_insert')}」`; playSE('se_insert'); document.getElementById('btn-naka').classList.remove('hidden'); document.getElementById('btn-bukkake').classList.remove('hidden'); }
         else if(act==='naka'){ 
             cost=35; state.nakaCount++; playSE('se_naka'); 
-            msg=(state.nakaCount===1)?`${state.maidName}「${d.h_naka_1}」` : `${state.maidName}「${d.h_naka_repeat}」`; 
+            msg=(state.nakaCount===1)?`${state.maidName}「${DIALOGUES[state.maidType].h_naka_1}」` : `${state.maidName}「${DIALOGUES[state.maidType].h_naka_repeat}」`; 
         }
-        else if(act==='bukkake'){ cost=25; msg=`${state.maidName}「${d.h_bukkake}」`; playSE('se_naka'); }
+        else if(act==='bukkake'){ cost=25; msg=`${state.maidName}「${DIALOGUES[state.maidType].h_bukkake}」`; playSE('se_naka'); }
         else if(act==='check'){ cost=0; msg=`${state.maidName}は蕩けた表情であなたの名を呼び込んでいます。`; }
+
         state.stamina -= cost; if(state.stamina > 100) state.stamina = 100;
         if(state.stamina <= 0){ state.stamina = 0; updateStaminaUI(); faint(); } else { updateStaminaUI(); displayMsg(msg); }
     }
 
-    function faint() { displayMsg(getDialogue('h_faint')); document.getElementById('intimate-ui').style.display="none"; dialogueCallback=()=>{ nextDay(); }; }
+    function faint() { 
+        displayMsg(`${state.maidName}「${DIALOGUES[state.maidType].h_faint}」`); 
+        document.getElementById('intimate-ui').style.display="none"; 
+        dialogueCallback=()=>{ nextDay(); }; 
+    }
+    
     function endIntimacy() { if(confirm("行為を終了しますか？")) nextDay(); }
     function updateStaminaUI() { document.getElementById('stamina-text').innerText=state.stamina; const fill=document.getElementById('stamina-fill'); fill.style.width=state.stamina+"%"; fill.style.background=state.stamina<30?"#e74c3c":"#2ecc71"; }
 
     function updateUI() {
         document.getElementById('display-day').innerText = `Day ${state.day}`;
         for (let i = 0; i < 6; i++) { const s=document.getElementById(`slot-${i}`); if(s) s.style.background=(i<state.timeIndex)?'var(--slot-active)':'rgba(0,0,0,0.1)'; }
+        
         const bgs = [ASSETS.bg.morning, ASSETS.bg.morning, ASSETS.bg.noon, ASSETS.bg.noon, ASSETS.bg.evening, ASSETS.bg.night];
         const bgLayer = document.getElementById('bg-layer');
         bgLayer.style.backgroundImage=`url('${bgs[state.timeIndex]}')`;
         bgLayer.style.backgroundColor = 'transparent';
+
         const char=document.getElementById('char-layer');
         char.src=(state.dress==="nude")?ASSETS.maid[state.maidType+"_nude"]:ASSETS.maid[state.maidType];
         char.style.left="200px";
