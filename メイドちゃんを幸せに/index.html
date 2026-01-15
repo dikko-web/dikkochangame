@@ -36,22 +36,31 @@
         .screen { position: absolute; inset: 0; display: none; background: #000; }
         .screen.active { display: block; }
 
-        /* スタート待機 */
-        #start-overlay {
-            z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #000; cursor: pointer;
+        /* TAP TO START */
+        #startup-overlay {
+            position: absolute; inset: 0; background: #000; z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 50px; cursor: pointer; letter-spacing: 5px;
         }
-        .tap-to-start {
-            color: #fff; font-size: 40px; letter-spacing: 0.2em;
-            animation: blink 1.5s infinite;
-        }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
         /* レイヤー管理 */
         #message-area { z-index: 500 !important; }
         #intimate-ui { z-index: 400 !important; }
         #side-menu { z-index: 300 !important; }
         #config-window { z-index: 1000 !important; display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; }
+
+        /* 立ち絵の境界線バグ対策 */
+        #char-layer, #npc-layer { 
+            position: absolute; bottom: 0; height: 760px; pointer-events: none; object-fit: contain;
+            image-rendering: -webkit-optimize-contrast; 
+            backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            transform: translateZ(0); -webkit-transform: translateZ(0);
+            outline: 1px solid transparent; border: none;
+        }
+        #char-layer { left: 200px; z-index: 5; animation: breathing 4s ease-in-out infinite; }
+        #npc-layer { right: 100px; z-index: 4; display: none; opacity: 0; transition: 0.5s; }
+
+        @keyframes breathing { 0%, 100% { transform: translateY(0) translateZ(0); } 50% { transform: translateY(-8px) translateZ(0); } }
 
         #title-screen { 
             background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('bg_title.jpg') center/cover no-repeat;
@@ -63,7 +72,7 @@
             margin-bottom: 80px; text-align: center;
         }
 
-        #intro-screen { color: #fff; display: flex; align-items: center; justify-content: center; padding: 100px; cursor: pointer; }
+        #intro-screen { background: #000; color: #fff; display: flex; align-items: center; justify-content: center; padding: 100px; cursor: pointer; }
         #intro-text { font-size: 32px; line-height: 2.2; text-align: center; max-width: 1000px; transition: opacity 0.5s ease; white-space: pre-wrap; pointer-events: none;}
 
         .noble-btn {
@@ -73,7 +82,7 @@
             transition: 0.3s; font-family: inherit;
         }
 
-        #selection-screen { background: #111; z-index: 100; }
+        #selection-screen { background: #111; }
         .selection-container { display: flex; width: 100%; height: 100%; }
         .maid-card {
             flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
@@ -84,18 +93,7 @@
         .maid-card .maid-img { height: 95%; width: 100%; background-position: bottom center; background-repeat: no-repeat; background-size: contain; pointer-events: none; }
         .maid-name-plate { position: absolute; bottom: 50px; background: var(--ui-window-bg); padding: 15px 60px; font-size: 36px; border: 2px solid var(--ui-accent); pointer-events: none;}
 
-        #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: 0.8s; background-color: #000; }
-        
-        #char-layer, #npc-layer { 
-            position: absolute; bottom: 0; height: 760px; pointer-events: none; object-fit: contain;
-            image-rendering: -webkit-optimize-contrast; 
-            backface-visibility: hidden; transform: translateZ(0);
-            outline: 1px solid transparent; 
-        }
-        #char-layer { left: 200px; z-index: 5; animation: breathing 4s ease-in-out infinite; }
-        #npc-layer { right: 100px; z-index: 4; display: none; opacity: 0; transition: 0.5s; }
-
-        @keyframes breathing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: 1s; z-index: 1;}
         
         .glass-window { background: var(--ui-window-bg); border: 1px solid var(--ui-accent); padding: 25px; color: var(--ui-accent); backdrop-filter: blur(4px); }
         #side-menu { position: absolute; top: 100px; right: 40px; width: 480px; }
@@ -110,6 +108,9 @@
         .stamina-container { width: 100%; height: 25px; background: rgba(0,0,0,0.5); border: 1px solid #fff; margin-top: 5px; overflow: hidden; }
         #stamina-fill { height: 100%; width: 100%; background: #2ecc71; transition: 0.3s; }
         
+        .config-label { display: block; margin: 15px 0 5px; font-weight: bold; font-size: 20px;}
+        input[type="range"] { width: 100%; cursor: pointer; height: 20px;}
+
         .hidden { display: none !important; }
         .tap-effect {
             position: absolute; width: 20px; height: 20px; background: rgba(255, 255, 255, 0.6);
@@ -122,8 +123,8 @@
 <body onmousedown="createTapEffect(event)">
 
 <div id="game-viewport">
-    <div id="start-overlay" class="screen active" onclick="bootGame()">
-        <div class="tap-to-start">TAP TO START</div>
+    <div id="startup-overlay" onclick="onStartupClick()">
+        TAP TO START
     </div>
 
     <div id="title-screen" class="screen">
@@ -146,6 +147,16 @@
                 <div class="maid-name-plate">ここあ</div>
             </div>
         </div>
+    </div>
+
+    <div id="config-window" class="glass-window">
+        <h2 style="margin:0; border-bottom:2px solid #333; padding-bottom:10px;">設定</h2>
+        <label class="config-label">BGM音量</label>
+        <input type="range" id="vol-bgm" min="0" max="1" step="0.1" value="0.5" onchange="updateVolume()">
+        <label class="config-label">ボイス音量</label>
+        <input type="range" id="vol-voice" min="0" max="1" step="0.1" value="1.0">
+        <br><br>
+        <button class="action-btn" style="width:100%" onclick="toggleConfig()">閉じる</button>
     </div>
 
     <div id="naming-screen" class="screen">
@@ -193,7 +204,7 @@
                 <div class="button-grid" style="grid-template-columns: 1fr 1fr 1fr;">
                     <button class="action-btn h-btn" onclick="hAction('kiss')">キス</button>
                     <button class="action-btn h-btn" onclick="hAction('breast')">胸</button>
-                    <button class="action-btn h-btn" onclick="hAction('clit')">クリト</button>
+                    <button class="action-btn h-btn" onclick="hAction('clit')">陰核</button>
                 </div>
             </div>
             <div class="h-group">
@@ -215,22 +226,16 @@
             <div id="message-text">...</div>
         </div>
     </div>
-
-    <div id="config-window" class="glass-window">
-        <h2 style="margin:0; border-bottom:2px solid #333; padding-bottom:10px;">設定</h2>
-        <label class="config-label">BGM音量</label>
-        <input type="range" id="vol-bgm" min="0" max="1" step="0.1" value="0.5" onchange="updateVolume()">
-        <label class="config-label">ボイス音量</label>
-        <input type="range" id="vol-voice" min="0" max="1" step="0.1" value="1.0">
-        <br><br>
-        <button class="action-btn" style="width:100%" onclick="toggleConfig()">閉じる</button>
-    </div>
 </div>
 
 <script>
-    // --- 音響設定 ---
     let audioCtx = null;
-    let currentSESource = null;
+
+    function onStartupClick() {
+        initAudio();
+        document.getElementById('startup-overlay').style.display = 'none';
+        showScreen('title-screen');
+    }
 
     function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -238,7 +243,7 @@
     }
 
     function playTypeSound(pitch = 1.0) {
-        if (!audioCtx || audioCtx.state !== 'running') return;
+        if (!audioCtx) return;
         const vol = document.getElementById('vol-voice').value;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -252,23 +257,9 @@
         osc.stop(audioCtx.currentTime + 0.1);
     }
 
-    // 効果音リセット機能
-    function stopAllSE() {
-        if (currentSESource) {
-            currentSESource.pause();
-            currentSESource.currentTime = 0;
-            currentSESource = null;
-        }
-    }
-
-    function createTapEffect(e) {
-        const ef = document.createElement('div');
-        ef.className='tap-effect';
-        ef.style.left=`${e.clientX}px`;
-        ef.style.top=`${e.clientY}px`;
-        document.body.appendChild(ef);
-        setTimeout(()=>ef.remove(), 500);
-    }
+    function updateVolume() { if (currentBGM) currentBGM.volume = document.getElementById('vol-bgm').value; }
+    function toggleConfig() { const win = document.getElementById('config-window'); win.style.display = (win.style.display === 'block') ? 'none' : 'block'; }
+    function createTapEffect(e) { const ef = document.createElement('div'); ef.className='tap-effect'; ef.style.left=`${e.clientX}px`; ef.style.top=`${e.clientY}px`; document.body.appendChild(ef); setTimeout(()=>ef.remove(), 500); }
 
     const AUDIO = { bgm_intro: 'bgm_intro.mp3', bgm_daily: 'bgm_daily.mp3', bgm_h: 'bgm_h.mp3', se_insert: 'se_insert.mp3', se_naka: 'se_naka.mp3' };
     const ASSETS = { 
@@ -285,76 +276,77 @@
     let typingTimer = null;
     let currentFullText = "";
 
-    const INTRO_LINES = ["冷たい雨が降る、薄暗い奴隷市場の片隅。", "そこには、『商品』にすらなれなかった異種族の少女がいた。", "店主は吐き捨てるように言う。\n「そいつは欠陥品だ。ただのゴミだよ」", "檻に閉じ込められ、震える彼女の瞳には、一切の光がなかった。", "……放っておけなかった。", "あなたは金貨を投げ、その少女を買い取った。", "あの日、あなたが救い出したのは……"];
+    const INTRO_LINES = ["冷たい雨が降る、薄暗い奴隷市場の片隅。", "そこには、『商品』にすらなれなかった異種族の少女がいた。", "店主は吐き捨てるように言う。\n「そいつは欠陥品だ。言葉も話さねえ、愛想もねえ、ただのゴミだよ」", "檻に閉じ込められ、震える彼女の瞳には、一切の光がなかった。", "……放っておけなかった。", "あなたは金貨を投げ、その少女を買い取った。", "あの日、あなたが救い出したのは……"];
 
     const DIALOGUES = {
         sayo: {
             pitch: 0.7,
-            morning: ["おはようございます、{m}。……あ、いえ、私は捨てられた身。何でも命じてください。","……夢を見ていました。あなたが私をまた捨てる夢を。"],
-            talk: ["私はあなたの所有物です。……他の方を見ないでください。私だけを、見ていてほしいのです。"],
-            pat: ["……ぁ、温かい。……もっと、もっと撫でてください。あなたの手の温もりがないと、不安なのです。"],
+            morning: ["おはようございます、{m}。……あ、いえ、私は捨てられた身。何でも命じてください。", "……夢を見ていました。あなたが私をまた捨てる夢を。", "朝食ですね。あなたに捨てられないよう、心を込めて作りました。"],
+            talk: ["私はあなたの所有物です。……他の方を見ないでください。私だけを、見ていてほしいのです。", "掃除も洗濯も、完璧にこなします。ですから……ずっと側に置いてください。", "奴隷市場では、ただ死を待つだけでした。光をくれたのは、{m}……あなただけです。"],
+            pat: ["……ぁ、温かい。……もっと、もっと撫でてください。不安なのです。", "私が……嬉しいと思ってもいいのでしょうか。捨てられたゴミだった、この私が……。"],
+            pat_nude: ["ぁ……裸の私を、そんなに慈しんでくださるなんて……。私は、あなたの物です……。"],
             service: ["お疲れですか、{m}？ 私の存在意義は、{m}に尽くすことだけです。"],
-            h_kiss: ["ん……っ。マスターの唇……とても熱くて、蕩けてしまいそうです……。"],
-            h_breast: ["ぁ……胸、触られるの……好きです。あなたの手の重みを、もっと刻んでください。"],
-            h_clit: ["ひゃあぁっ！ そこ……っ、そこはダメ……あ、あぁぁ！ 脳が、真っ白に……っ！"],
-            h_finger: ["……指、入ってきました。私の中を、あなたの形に作り変えて……もっと深く……っ！"],
-            out_anu: ["アヌ「あら、サヨさん。今日もご主人様にべったりね。相変わらず一途なんだから。」", "サヨ「アヌさん……。はい。私は{m}に救われた身ですから。」"],
-            out_chief: ["メイド長「サヨさん、お仕事の調子はどうかしら？ 顔色が良くなったようで安心したわ。」", "サヨ「メイド長。ありがとうございます。{m}が毎日愛をくださるおかげです。」"],
-            out_momoki: ["ももき「わぁ、サヨちゃん、今日もご主人様にべったり！ 羨ましいなー。」", "サヨ「ももきさん……。はい、{m}は私のすべてですから。」", "ももき「帰ったらももきも愛してもらお！ 負けないんだから！」"],
-            out_homu: ["ほむ「今日もご主人様とお散歩ですか？ 仲が良いな！」", "サヨ「ほむさん。ええ、{m}と一緒なら、どこへ行っても天国のように感じます。」", "ほむ「信頼できる主（あるじ）に命を捧げる。それこそが、我ら異種族が生き残る道だな」"]
+            service_nude: ["裸で、あなたにお仕えする……。これこそが、捨てられた私の真実の姿。"],
+            dress_nude: "……あ、裸、ですか……？ わかりました。……少し恥ずかしいですが、すべてをさらけ出します。",
+            dress_normal: "メイド服を……。ありがとうございます。背中のリボン、結んでいただけますか？",
+            h_kiss: ["ん……っ。マスターの唇……とても熱くて、蕩けてしまいそうです……。", "……ん、ちゅ。もっと……もっと慈しんでください。私は、あなたの所有物なのですから。"],
+            h_breast: ["ぁ……胸、触られるの……好きです。あなたの手の重みを、もっと刻んでください。", "……っ！ 乳房まで、あなたのものに。……嬉しいです。汚してください、マスター。"],
+            h_clit: ["ひゃあぁっ！ そこ……っ、そこはダメ……あ、あぁぁ！ 脳が、真っ白に……っ！", "……っ、あ。敏感なところ……マスターに、全部、握られて……ふぁあ！"],
+            h_finger: ["……指、入ってきました。私の中を、あなたの形に作り変えて……もっと深く……っ！", "あぁぁっ！ 指だけで……こんな……。私をめちゃくちゃにしてください！"],
+            h_naka_1: "あぁっ！ 溢れる……マスターの、熱いのが……っ！ 私は、あなたのものです……！",
+            h_naka_repeat: "ひゃぁぁぁっ！ また、きた……っ！ 嬉しい……もっと中を汚して……私を塗り潰してぇ！",
+            h_bukkake: "んっ、ぁ……。外に……勿体ないけれど、あなたの汚れなら、私、誇らしいです……。",
+            h_faint: "……ぁ……あ……。……す、き……ます、た……（サヨは意識を失いました）",
+            after_h: ["……はぁ、はぁ。……嬉しい。あなたの種で、私が満たされていく。……私はあなたのモノです。"],
+            out_anu: ["アヌ「あら、サヨさん。今日もご主人様にべったりね。相変わらず一途なんだから。」", "サヨ「アヌさん……。はい。私は{m}に救われた身ですから、一生離れるつもりはありません。」", "アヌ「ふふっ、その執着心、ちょっと羨ましいわね。私ももっと甘え上手にならなくちゃ。」"],
+            out_chief: ["メイド長「サヨさん、お仕事の調子はどうかしら？ 顔色が良くなったようで安心したわ。」", "サヨ「メイド長。ありがとうございます。{m}が毎日、私に役割と……愛をくださるおかげです。」", "メイド長「ふふ、そうね。あなたが幸せそうで何よりよ。主人のために頑張るのよ？」"],
+            out_momoki: ["ももき「わぁ、サヨちゃん、今日もご主人様にべったり！ 羨ましいなー。」", "サヨ「ももきさん……。はい、{m}は私のすべてですから。」", "ももき「いいなー！ 帰ったらももきもご主人様にいっぱい愛してもらお！ 負けないんだから！」"],
+            out_homu: ["ほむ「今日もご主人様とお散歩ですか？ 仲が良いな！」", "サヨ「ほむさん。ええ、{m}と一緒なら、どこへ行っても天国のように感じます。」", "ほむ「うむ。信頼できる主（あるじ）に命を捧げる。それこそが、我ら異種族が生き残る唯一の道よな」"]
         },
         kokoa: {
             pitch: 1.3,
-            morning: ["……ん。……捨てられてない。……よかった。……おはよ、{m}。","……朝。光がまぶしい。……あなたの影に、隠れさせて……？"],
-            talk: ["……ねぇ、私のこと……好き？ ……嫌いになったら、その場で殺してね。"],
-            pat: ["……んぅ。……これ、だいすき。……もっと、強く。跡が残るくらい……。"],
-            service: ["……ご奉仕、する。……何がいい？ ……抱っこ？"],
-            h_kiss: ["ん……ちゅ。……おいしい。……{m}の味、全部、飲み込みたい……。"],
-            h_breast: ["……ん。……胸、いっぱい触って。……これ、{m}のものだもん。"],
-            h_clit: ["ひゃんっ！ ……そこ、へんな感じ……っ。……あついよ……！"],
-            h_finger: ["ぁ……んっ！ ……なか、あつい。……ぐちゃぐちゃに、混ぜて……。"],
-            out_anu: ["アヌ「ここあちゃん、こんにちは！ 今日もご主人様の後ろに隠れて、可愛いわねぇ。」", "ここあ「……ん。……アヌ。……やだ。……{m}は、私のだから。」"],
-            out_chief: ["メイド長「ここあ、ちゃんとご主人様のお役に立てているかしら？ 挨拶は忘れないようにね。」", "ここあ「……ん。……大丈夫。……{m}は、私のこと、甘やかしてくれるから。」"],
-            out_momoki: ["ももき「わー！ ここあちゃん、今日もべったりじゃん！ 羨ましいなー。」", "ここあ「……ん。……ももき。……{m}は、渡さないよ。」", "ももき「ももきも帰ったらご主人様に愛してもらお！ 楽しみだなー！」"],
-            out_homu: ["ほむ「ここあ！ 見ていて微笑ましいぞ！」", "ここあ「……ん。……ほむ。……私は、{m}に拾われたの。ずっと、一緒にいるの。」", "ほむ「ああ、その一途な想い、ご主人様にもきっと伝わっているぞ。素敵な関係だな！」"]
+            morning: ["……ん。……捨てられてない。……よかった。……おはよ、{m}。", "……朝。……光がまぶしい。……あなたの影に、隠れさせて……？"],
+            talk: ["……ねぇ、私のこと……好き？ ……嫌いになったら、その場で殺してね。", "……言葉、へただけど。……あなたがいれば、それだけでいい。", "……{m}がいないと、息ができない。……ほんとだよ？"],
+            pat: ["……んぅ。……これ、だいすき。……もっと、強く。跡が残るくらい……。", "……えへへ。……私はあなたのペット。……ずっと、飼っててね。"],
+            pat_nude: ["……ん。……裸、触られるの、気持ちいい……。……もっと。……いっぱい。……ぐちゃぐちゃにして。"],
+            service: ["……ご奉仕、する。……何がいい？ ……抱っこ？ ……耳のお掃除……？", "……{m}が喜ぶこと、いっぱいしたい。……捨てられないように、頑張るから。"],
+            service_nude: ["……裸、楽。……あなたも、脱ぐ……？ ……私が、脱がしてあげる。"],
+            dress_nude: "……裸？ ……いいよ。……ほら。……全部、見て。……触って。",
+            dress_normal: "……服。……ちょっと、寂しい。……また、すぐに脱がせてね？",
+            h_kiss: ["ん……ちゅ。……おいしい。……{m}の味、全部、飲み込みたい……。", "……ん、ぷは。……もっと。もっと、ちゅーして。……寂しいの。"],
+            h_breast: ["……ん。……胸、いっぱい触って。……これ、{m}のものだもん。", "……ぁ。……大きく、なっちゃう。……はずかしい。……苦しい。……でも、すき。"],
+            h_clit: ["ひゃんっ！ ……そこ、へんな感じ……っ。……あつい、あついよ……！", "……んぅ！ ……いっちゃう。……こわれる。……もっと、いじめて……。"],
+            h_finger: ["……なか。……ごりごり、する。……マスターの指、すごい。……もっと奥まで。", "ぁ……んっ！ ……なか、あつい。……ぐちゃぐちゃに、混ぜて……。"],
+            h_insert: "……ん。……すご, いの……。……私の中, 全部、{m}で埋まった……。",
+            h_naka_1: "ぁ……んっ！ ……でた。あったかい。……逃がさない。これ、私の宝物にする。",
+            h_naka_repeat: "ふぁ……っ！？ ……また……だ。……すごい、いっぱい。ぐちゃぐちゃにして……。",
+            h_bukkake: "……ん。……いっぱい, かかった。……あなたの匂い、身体に染みついちゃう……えへへ。",
+            h_faint: "……もう, むり……（ここあは満足げに目を閉じました）",
+            after_h: ["……ん。……あつい。……中、ドロドロ。……これ、私たちの証。"],
+            out_anu: ["アヌ「ここあちゃん、こんにちは！ 今日もご主人様の後ろに隠れて、可愛いわねぇ。」", "ここあ「……ん。……アヌ。……やだ。……{m}は、私のだから。見ないで。」", "アヌ「あらあら、独占欲が強いわね。でも、愛されてるなら安心ね！」"],
+            out_chief: ["メイド長「ここあ、ちゃんとご主人様のお役に立てているかしら？ 挨拶は忘れないようにね。」", "ここあ「……ん。……大丈夫。……{m}は、私のこと、いっぱい甘やかしてくれるから。」", "メイド長「ふふ、困った子ね。絆は本物のようね。」"],
+            out_momoki: ["ももき「わー！ ここあちゃん、今日もべったりじゃん！ 羨ましいなー。」", "ここあ「……ん。……ももき。……{m}は、渡さないよ。」", "ももき「わかってるって！ ももきも帰ったら愛してもらお！」"],
+            out_homu: ["ほむ「ここあ！ 見ていて微笑ましいぞ！」", "ここあ「……ん。……ほむ。……私は、{m}に拾われたの。だから、ずっと、一緒にいるの。」", "ほむ「ああ、その一途な想い、ご主人様にもきっと伝わっているぞ。素敵な関係だな！」"]
         }
     };
 
-    function showScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        const t = document.getElementById(id);
-        if(t) t.classList.add('active');
+    function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); const t = document.getElementById(id); if(t) t.classList.add('active'); }
+    
+    function playBGM(key) { 
+        if(currentBGM){
+            currentBGM.pause(); 
+            currentBGM.currentTime = 0;
+            currentBGM = null;
+        } 
+        currentBGM = new Audio(AUDIO[key]); 
+        currentBGM.loop = true; 
+        currentBGM.volume = document.getElementById('vol-bgm').value; 
+        currentBGM.play().catch(e=>{}); 
     }
 
-    function playBGM(key) {
-        if(currentBGM){currentBGM.pause(); currentBGM.currentTime=0;}
-        currentBGM=new Audio(AUDIO[key]);
-        currentBGM.loop=true;
-        currentBGM.volume=document.getElementById('vol-bgm').value;
-        currentBGM.play().catch(e=>{});
-    }
+    function playSE(key) { const se=new Audio(AUDIO[key]); se.play().catch(e=>{}); }
 
-    function playSE(key) {
-        stopAllSE();
-        const se=new Audio(AUDIO[key]);
-        currentSESource = se;
-        se.play().catch(e=>{});
-    }
-
-    // TAP TO START
-    function bootGame() {
-        initAudio();
-        showScreen('title-screen');
-    }
-
-    function startIntro() {
-        initAudio();
-        introIdx=0;
-        showScreen('intro-screen');
-        playBGM('bgm_intro');
-        nextIntro();
-    }
-
+    function startIntro() { introIdx=0; showScreen('intro-screen'); playBGM('bgm_intro'); nextIntro(); }
     function handleIntroClick() { nextIntro(); }
     function nextIntro() {
         if(isTyping){skipTyping(); return;}
@@ -367,15 +359,12 @@
         state.masterName = document.getElementById('master-name').value || "ご主人様";
         state.maidName = document.getElementById('maid-name').value || (state.maidType==='sayo'?"サヨ":"ここあ");
         document.getElementById('display-maid-name').innerText = state.maidName;
-        state.day=1; state.timeIndex=0; state.mode="normal";
-        playBGM('bgm_daily');
-        updateUI(); 
-        showScreen('main-screen');
+        playBGM('bgm_daily'); state.day=1; state.timeIndex=0; updateUI(); showScreen('main-screen');
         displayMsg(`${state.maidName}「${getDialogue('morning')}」`);
     }
 
     function displayMsg(txt) {
-        if(!txt || txt === "undefined") { txt = "（……静かにあなたを見つめています）"; }
+        if(!txt || txt === "undefined") { txt = "（静かにあなたを見つめています）"; }
         const processedTxt = txt.replace(/{m}/g, state.masterName);
         const pitch = DIALOGUES[state.maidType] ? DIALOGUES[state.maidType].pitch : 1.0;
         displayMsgTyping(processedTxt, pitch, 'message-text');
@@ -410,27 +399,27 @@
         state.timeIndex++; updateUI();
     }
 
-    // 外出（背景固定修正）
     function startOuting() {
         const pool = ['anu', 'chief', 'momoki', 'homu'];
         const npcType = pool[Math.floor(Math.random()*pool.length)];
         const lines = DIALOGUES[state.maidType]['out_' + npcType];
+        
         document.getElementById('side-menu').style.visibility="hidden";
-        // 背景画像のパスを確実に指定
-        document.getElementById('bg-layer').style.backgroundImage = 'url("' + ASSETS.bg.street + '")';
+        document.getElementById('bg-layer').style.backgroundImage = `url('${ASSETS.bg.street}')`; // 強制指定
+        
         const npcLayer = document.getElementById('npc-layer');
         npcLayer.src = ASSETS.npc[npcType];
         npcLayer.style.display = "block";
         setTimeout(() => npcLayer.style.opacity = 1, 10);
+        
         let lIdx = 0;
         const seq = () => {
             if(lIdx < lines.length){ displayMsg(lines[lIdx]); lIdx++; dialogueCallback = seq; }
             else {
                 npcLayer.style.opacity = 0;
                 setTimeout(() => npcLayer.style.display = "none", 500);
-                state.timeIndex++; state.love += 5; 
-                updateUI(); // ここで背景が元の時間帯に戻る
-                displayMsg(`${state.maidName}「……帰りましょう、{m}。やっぱりここが落ち着きます。」`);
+                state.timeIndex++; state.love += 5; updateUI();
+                displayMsg(`${state.maidName}「……帰りましょう、{m}。やっぱり屋敷が一番落ち着きます。」`);
             }
         };
         seq();
@@ -439,7 +428,7 @@
     function handleDress() {
         const c = confirm("裸にしますか？");
         state.dress = c ? "nude" : "normal";
-        displayMsg(`${state.maidName}「${c ? getDialogue('dress_nude') : getDialogue('dress_normal')}」`);
+        displayMsg(`${state.maidName}「${c ? DIALOGUES[state.maidType].dress_nude : DIALOGUES[state.maidType].dress_normal}」`);
         state.timeIndex++; updateUI();
     }
 
@@ -458,7 +447,9 @@
 
     function startIntimacy() {
         state.mode="h"; state.stamina=100; state.nakaCount=0;
-        document.getElementById('bg-layer').style.backgroundImage = 'url("' + ASSETS.bg.bed + '")';
+        // 行為時は背景を真っ黒にする
+        document.getElementById('bg-layer').style.backgroundImage = 'none';
+        document.getElementById('bg-layer').style.backgroundColor = '#000';
         const char=document.getElementById('char-layer');
         char.src=ASSETS.maid[state.maidType+"_h"]; char.style.left="0px";
         playBGM('bgm_h'); document.getElementById('intimate-ui').style.display="flex";
@@ -470,70 +461,78 @@
         const char=document.getElementById('char-layer');
         char.src=`${state.maidType}_${act}.jpg`; char.onerror=()=>{char.src=ASSETS.maid[state.maidType+"_h"]; char.onerror=null;};
         let cost = 10; let msg = ""; const d = DIALOGUES[state.maidType];
+
         if(act==='kiss'){ cost=-15; msg = `${state.maidName}「${getDialogue('h_kiss')}」`; }
         else if(act==='breast'){ cost=10; msg = `${state.maidName}「${getDialogue('h_breast')}」`; }
         else if(act==='clit'){ cost=12; msg = `${state.maidName}「${getDialogue('h_clit')}」`; }
         else if(act==='finger'){ cost=15; msg = `${state.maidName}「${getDialogue('h_finger')}」`; }
         else if(act==='insert'){ cost=20; msg=`${state.maidName}「あぁ……っ、あつい……。{m}の熱いところが、私を塗り潰してぇ！」`; playSE('se_insert'); document.getElementById('btn-naka').classList.remove('hidden'); document.getElementById('btn-bukkake').classList.remove('hidden'); }
-        else if(act==='naka'){ cost=35; state.nakaCount++; playSE('se_naka'); msg=(state.nakaCount===1)?`${state.maidName}「あぁっ！ 溢れるマスターの、熱いのが……っ！」` : `${state.maidName}「また、きた……っ！ もっと中を汚して……っ！」`; }
-        else if(act==='bukkake'){ cost=25; msg=`${state.maidName}「んっ、ぁ……。外に……勿体ないけれど、誇らしいです……。」`; playSE('se_naka'); }
+        else if(act==='naka'){ 
+            cost=35; state.nakaCount++; playSE('se_naka'); 
+            msg=(state.nakaCount===1)?`${state.maidName}「${DIALOGUES[state.maidType].h_naka_1}」` : `${state.maidName}「${DIALOGUES[state.maidType].h_naka_repeat}」`; 
+        }
+        else if(act==='bukkake'){ cost=25; msg=`${state.maidName}「${DIALOGUES[state.maidType].h_bukkake}」`; playSE('se_naka'); }
         else if(act==='check'){ cost=0; msg=`${state.maidName}は蕩けた表情であなたの名を呼び込んでいます。`; }
+
         state.stamina -= cost; if(state.stamina > 100) state.stamina = 100;
         if(state.stamina <= 0){ state.stamina = 0; updateStaminaUI(); faint(); } else { updateStaminaUI(); displayMsg(msg); }
     }
 
     function faint() { 
-        stopAllSE();
-        const fLine = state.maidType === 'sayo' ? "……ぁ……あ……。……す、き……（意識を失いました）" : "……もう, むり……。……あ, つい……（目を閉じました）";
-        displayMsg(`${state.maidName}「${fLine}」`); 
+        displayMsg(`${state.maidName}「${DIALOGUES[state.maidType].h_faint}」`); 
         document.getElementById('intimate-ui').style.display="none"; 
-        dialogueCallback=()=>{nextDay();}; 
+        dialogueCallback=()=>{ nextDay(); }; 
     }
     
     function endIntimacy() { if(confirm("行為を終了しますか？")) nextDay(); }
     
     function updateStaminaUI() { document.getElementById('stamina-text').innerText=state.stamina; const fill=document.getElementById('stamina-fill'); fill.style.width=state.stamina+"%"; fill.style.background=state.stamina<30?"#e74c3c":"#2ecc71"; }
 
-    // 背景・時間・UIの同期更新
     function updateUI() {
         document.getElementById('display-day').innerText = `Day ${state.day}`;
-        // スロットリセット
+        // タイムスロットの描画
         for (let i = 0; i < 6; i++) { 
             const s=document.getElementById(`slot-${i}`); 
-            if(s) s.style.background=(i < state.timeIndex) ? 'var(--slot-active)' : 'rgba(0,0,0,0.1)'; 
+            if(s) s.style.background=(i<state.timeIndex)?'var(--slot-active)':'rgba(0,0,0,0.1)'; 
         }
         
-        if (state.mode === "normal") {
-            const bgs=[ASSETS.bg.morning, ASSETS.bg.morning, ASSETS.bg.noon, ASSETS.bg.evening, ASSETS.bg.night, ASSETS.bg.night];
-            // WEB版対策のためパス指定を厳密に
-            document.getElementById('bg-layer').style.backgroundImage = 'url("' + (bgs[state.timeIndex] || ASSETS.bg.morning) + '")';
-            
-            const char=document.getElementById('char-layer');
-            char.src=(state.dress==="nude")?ASSETS.maid[state.maidType+"_nude"]:ASSETS.maid[state.maidType];
-            char.style.left="200px";
-            
-            document.getElementById('btn-sleep').classList.toggle('hidden', state.timeIndex < 4);
-            document.getElementById('side-menu').style.visibility="visible";
-            document.getElementById('side-menu').classList.remove('hidden');
-        }
+        // 時間帯と背景の厳密な同期
+        const bgs = [
+            ASSETS.bg.morning, ASSETS.bg.morning, // 朝
+            ASSETS.bg.noon, ASSETS.bg.noon,       // 昼
+            ASSETS.bg.evening, ASSETS.bg.night    // 夕・夜
+        ];
+        const bgLayer = document.getElementById('bg-layer');
+        bgLayer.style.backgroundImage = `url('${bgs[state.timeIndex]}')`;
+        bgLayer.style.backgroundColor = 'transparent'; // 行為後のリセット用
+
+        const char=document.getElementById('char-layer');
+        char.src=(state.dress==="nude")?ASSETS.maid[state.maidType+"_nude"]:ASSETS.maid[state.maidType];
+        char.style.left="200px";
+
+        document.getElementById('btn-sleep').classList.toggle('hidden', state.timeIndex < 4);
+        document.getElementById('side-menu').style.visibility="visible";
+        document.getElementById('side-menu').classList.remove('hidden');
     }
 
     function nextDay() {
-        // サウンドとSEを完全に停止
-        stopAllSE();
         state.day++; state.timeIndex=0; state.stamina=100; state.mode="normal";
+        
+        // 全サウンドの強制リセット
+        if(currentBGM) {
+            currentBGM.pause();
+            currentBGM.currentTime = 0;
+            currentBGM = null;
+        }
+
         document.getElementById('intimate-ui').style.display="none";
         document.getElementById('btn-naka').classList.add('hidden');
         document.getElementById('btn-bukkake').classList.add('hidden');
-        document.querySelectorAll('.h-btn').forEach(b => b.disabled = false);
         
-        playBGM('bgm_daily');
+        playBGM('bgm_daily'); 
         updateUI();
         displayMsg(`${state.maidName}「${getDialogue('morning')}」`);
     }
-
-    function toggleConfig() { const win = document.getElementById('config-window'); win.style.display = (win.style.display === 'block') ? 'none' : 'block'; }
-    function updateVolume() { if (currentBGM) currentBGM.volume = document.getElementById('vol-bgm').value; }
 
     function updateScale() { const v=document.getElementById('game-viewport'); const s=Math.min(window.innerWidth/1400,window.innerHeight/800); v.style.transform=`scale(${s})`; }
     window.addEventListener('resize', updateScale); window.addEventListener('load', updateScale);
