@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Maid Simulation - Mobile Optimized</title>
+    <title>Maid Simulation - Fixed 1400x800</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
@@ -15,104 +15,83 @@
             --slot-active: #8b0000;
         }
 
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background: #000; overflow: hidden; font-family: 'Shippori Mincho', serif; }
+        /* 外側の背景：常に黒 */
+        body, html { 
+            margin: 0; padding: 0; height: 100%; width: 100%; 
+            background: #000; overflow: hidden; 
+            font-family: 'Shippori Mincho', serif;
+            display: flex; align-items: center; justify-content: center;
+        }
         
-        /* ゲーム画面全体のコンテナ */
+        /* 1400x800固定のゲーム画面 */
         #game-viewport {
-            position: relative; 
-            width: 100vw; height: 56.25vw; /* 16:9 ratio */
-            max-width: 177.78vh; max-height: 100vh;
-            margin: auto; background: #222; overflow: hidden; 
-            top: 50%; transform: translateY(-50%);
+            position: absolute; 
+            width: 1400px; 
+            height: 800px;
+            background: #222; 
+            overflow: hidden;
+            flex-shrink: 0;
+            /* スケールの基準点を中心にする */
+            transform-origin: center center;
         }
 
         .screen { position: absolute; inset: 0; display: none; }
         .screen.active { display: block; }
 
-        #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: 1.5s ease-in-out; }
+        #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; }
         
+        /* キャラの配置：1400x800に基づいたpx指定 */
         #char-layer { 
-            position: absolute; bottom: 0; left: 15%; height: 95%; pointer-events: none; 
-            transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1.0); z-index: 5; 
-            object-fit: contain;
+            position: absolute; bottom: 0; left: 200px; height: 760px; pointer-events: none; 
+            z-index: 5; object-fit: contain;
         }
 
         .glass-window {
             background: var(--ui-window-bg); border: 1px solid var(--ui-accent);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(4px); padding: 12px;
-            color: var(--ui-accent); transition: all 0.6s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(4px); 
+            padding: 20px; color: var(--ui-accent);
         }
 
-        /* 選択画面：スマホではカードを少し小さく */
-        .selection-container { display: flex; flex-direction: row; gap: 20px; justify-content: center; align-items: center; height: 100%; background: rgba(0,0,0,0.8); }
-        .maid-card { width: 200px; max-width: 40%; text-align: center; cursor: pointer; transition: 0.3s; background: var(--ui-window-bg); padding: 10px; border: 2px solid transparent; }
-        .maid-thumb { width: 100%; height: 250px; margin-bottom: 10px; background-size: contain; background-repeat: no-repeat; background-position: center; }
-
-        /* UI要素 */
-        #time-indicator { position: absolute; top: 10px; right: 2%; display: flex; gap: 4px; z-index: 100; padding: 6px 10px; background: var(--ui-window-bg); border: 1px solid var(--ui-accent); }
-        .time-group { display: flex; align-items: center; gap: 4px; margin-left: 8px; }
-        .time-slot { width: 20px; height: 10px; background: rgba(0,0,0,0.1); border: 1px solid var(--ui-accent); }
+        /* 1400x800内での位置・サイズ固定 */
+        #time-indicator { 
+            position: absolute; top: 20px; right: 40px; 
+            display: flex; gap: 8px; z-index: 100; 
+            padding: 10px 20px; background: var(--ui-window-bg); border: 2px solid var(--ui-accent); 
+        }
+        .time-group { display: flex; align-items: center; gap: 8px; margin-left: 12px; font-size: 18px; }
+        .time-slot { width: 35px; height: 18px; background: rgba(0,0,0,0.1); border: 1px solid var(--ui-accent); }
         .time-slot.active { background: var(--slot-active); }
 
-        #side-menu { position: absolute; top: 12%; right: 2%; width: 35%; z-index: 10; }
-        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        #side-menu { 
+            position: absolute; top: 100px; right: 40px; 
+            width: 480px; z-index: 10; 
+        }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .action-btn { 
             background: var(--btn-bg); border: 1px solid var(--ui-accent); 
-            padding: 10px 4px; cursor: pointer; font-family: inherit; font-size: 0.9rem;
-            display: flex; align-items: center; justify-content: center; text-align: center;
+            padding: 15px 5px; cursor: pointer; font-family: inherit; 
+            font-size: 22px; display: flex; align-items: center; 
+            justify-content: center; text-align: center;
         }
         
-        #message-area { position: absolute; bottom: 2%; left: 2%; right: 2%; height: 20%; z-index: 10; }
-        
-        /* 行為時のウィンドウ形状 */
+        #message-area { 
+            position: absolute; bottom: 20px; left: 20px; right: 20px; 
+            height: 180px; z-index: 10; 
+        }
+        #message-text { font-size: 26px; line-height: 1.6; padding: 10px; }
+
         #message-area.h-window-style {
-            left: 55%; right: 2%; bottom: 4%; height: 35%; 
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            padding: 15px;
+            left: 750px; right: 40px; bottom: 40px; height: 300px; 
+            padding: 25px;
         }
 
-        #message-text { font-size: 1.1rem; line-height: 1.4; height: 75%; overflow: hidden; }
-
-        /* 行為メニュー：スマホでの潰れを防止 */
-        #intimate-ui { position: absolute; top: 8%; right: 2%; width: 280px; display: none; z-index: 20; flex-direction: column; gap: 8px; }
-        .h-group { display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.7); padding: 8px; border: 1px solid #fff; color: #fff; }
-        .h-label { font-size: 0.75rem; border-bottom: 1px solid #fff; margin-bottom: 4px; }
-
-        #btn-nakadashi { background: #8b0000 !important; color: #fff; border: 1px solid #fff; font-weight: bold; margin-top: 4px; }
-
-        /* ==========================================
-           スマホ・タブレット向けレスポンシブ調整
-        ========================================== */
-        @media screen and (max-width: 850px) {
-            #side-menu, #intimate-ui { 
-                width: 45%; /* メニューを広くしてボタンの文字が見えるようにする */
-            }
-            #char-layer {
-                left: 2% !important; /* キャラを左端に固定してスペース確保 */
-                height: 90%;
-            }
-            #message-area.h-window-style {
-                left: 45%; /* ウィンドウの位置を微調整 */
-                width: 53%;
-                font-size: 0.9rem;
-            }
-            .action-btn {
-                padding: 12px 2px; /* タップしやすく縦に広げる */
-                font-size: 0.8rem;
-            }
-            #time-indicator {
-                transform: scale(0.8);
-                transform-origin: top right;
-            }
+        #intimate-ui { 
+            position: absolute; top: 80px; right: 40px; 
+            width: 500px; display: none; z-index: 20; 
+            flex-direction: column; gap: 12px; 
         }
-
-        /* 縦画面（Portrait）時の簡易対応：16:9を維持しつつ中央配置 */
-        @media screen and (orientation: portrait) {
-            #game-viewport {
-                width: 100vw; height: 56.25vw;
-                top: 50%; transform: translateY(-50%);
-            }
-        }
+        .h-group { background: rgba(0,0,0,0.7); padding: 12px; border: 2px solid #fff; color: #fff; }
+        .h-label { font-size: 16px; border-bottom: 1px solid #fff; margin-bottom: 8px; }
 
         .hidden { display: none !important; }
         .ui-invisible { visibility: hidden !important; opacity: 0; transition: 0.3s; }
@@ -122,29 +101,29 @@
 
 <div id="game-viewport">
     <div id="title-screen" class="screen active">
-        <div style="text-align: center; margin-top: 15%;">
-            <h1 style="color: white; font-size: 2.5rem; text-shadow: 2px 2px 10px #000;">Maid Simulation</h1>
-            <button class="action-btn" style="width: 180px; margin: auto; padding: 15px;" onclick="showSelection()">物語を始める</button>
+        <div style="text-align: center; margin-top: 200px;">
+            <h1 style="color: white; font-size: 80px; text-shadow: 4px 4px 15px #000;">Maid Simulation</h1>
+            <button class="action-btn" style="width: 300px; margin: auto; padding: 20px;" onclick="showSelection()">物語を始める</button>
         </div>
     </div>
 
     <div id="selection-screen" class="screen">
-        <div class="selection-container">
-            <div class="maid-card" onclick="selectMaid('sayo')">
-                <div class="maid-thumb" style="background-image: url('sayo_normal.png');"></div> 
-                <h3>サヨ</h3>
+        <div style="display: flex; gap: 40px; justify-content: center; align-items: center; height: 100%; background: rgba(0,0,0,0.8);">
+            <div class="glass-window" style="width: 250px; text-align: center; cursor: pointer;" onclick="selectMaid('sayo')">
+                <div style="height: 300px; background: url('sayo_normal.png') center/contain no-repeat;"></div>
+                <h3 style="font-size: 30px;">サヨ</h3>
             </div>
-            <div class="maid-card" onclick="selectMaid('kokoa')">
-                <div class="maid-thumb" style="background-image: url('kokoa_normal.png');"></div> 
-                <h3>ここあ</h3>
+            <div class="glass-window" style="width: 250px; text-align: center; cursor: pointer;" onclick="selectMaid('kokoa')">
+                <div style="height: 300px; background: url('kokoa_normal.png') center/contain no-repeat;"></div>
+                <h3 style="font-size: 30px;">ここあ</h3>
             </div>
         </div>
     </div>
 
     <div id="naming-screen" class="screen">
-        <div class="glass-window" style="width: 300px; margin: 10% auto; text-align: center;">
-            <p style="margin:5px">主人の名</p><input type="text" id="master-name" value="ご主人様" style="width:80%; margin-bottom:10px;">
-            <p style="margin:5px">メイドの名</p><input type="text" id="maid-name" value="" style="width:80%;"><br><br>
+        <div class="glass-window" style="width: 400px; margin: 150px auto; text-align: center;">
+            <p style="font-size:24px; margin:10px">主人の名</p><input type="text" id="master-name" value="ご主人様" style="width:80%; font-size: 24px;">
+            <p style="font-size:24px; margin:10px">メイドの名</p><input type="text" id="maid-name" value="" style="width:80%; font-size: 24px;"><br><br>
             <button class="action-btn" style="width: 100%;" onclick="finalizeNaming()">開始</button>
         </div>
     </div>
@@ -160,7 +139,7 @@
         <img id="char-layer" src="">
 
         <div id="side-menu" class="glass-window ui-el">
-            <div style="border-bottom: 1px solid var(--ui-accent); margin-bottom: 6px; font-weight: bold; display: flex; justify-content: space-between; font-size: 0.8rem;">
+            <div style="border-bottom: 2px solid var(--ui-accent); margin-bottom: 10px; font-weight: bold; display: flex; justify-content: space-between; font-size: 24px;">
                 <span id="display-maid-name">NAME</span><span id="display-day">Day 1</span>
             </div>
             <div class="button-grid">
@@ -191,7 +170,7 @@
                 </div>
                 <button class="action-btn hidden" id="btn-nakadashi" onclick="hAction('naka')">中だし</button>
             </div>
-            <div class="button-grid" style="margin-top:5px;">
+            <div class="button-grid" style="margin-top:10px;">
                 <button class="action-btn" style="background:#555; color:#fff;" onclick="endIntimacy()">終了</button>
                 <button class="action-btn" onclick="hAction('check')">様子</button>
             </div>
@@ -199,15 +178,35 @@
 
         <div id="message-area" class="glass-window ui-el" onclick="handleMsgClick()">
             <div id="message-text">...</div>
-            <div style="text-align: right; position: absolute; bottom: 5px; right: 10px;">
-                <button class="sys-btn" style="background:none; border:none; color:#666; cursor:pointer; font-size:0.6rem;" onclick="toggleUI(); event.stopPropagation();">UI隠す</button>
-                <button class="sys-btn" style="background:none; border:none; color:#666; cursor:pointer; font-size:0.6rem;" onclick="saveGame(); event.stopPropagation();">セーブ</button>
+            <div style="text-align: right; position: absolute; bottom: 10px; right: 20px;">
+                <button class="sys-btn" style="background:none; border:none; color:#666; cursor:pointer; font-size:14px;" onclick="toggleUI(); event.stopPropagation();">UI隠す</button>
+                <button class="sys-btn" style="background:none; border:none; color:#666; cursor:pointer; font-size:14px;" onclick="saveGame(); event.stopPropagation();">セーブ</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    // 画面のリサイズに合わせてスケーリングを計算する関数
+    function updateScale() {
+        const viewport = document.getElementById('game-viewport');
+        const targetWidth = 1400;
+        const targetHeight = 800;
+        
+        const scaleX = window.innerWidth / targetWidth;
+        const scaleY = window.innerHeight / targetHeight;
+        
+        // 画面に収まるように、小さい方の比率を採用する（アスペクト比維持）
+        const scale = Math.min(scaleX, scaleY);
+        
+        viewport.style.transform = `scale(${scale})`;
+    }
+
+    // イベント登録
+    window.addEventListener('resize', updateScale);
+    window.addEventListener('load', updateScale);
+
+    // --- 以降、ロジック部分は変更なし ---
     const ASSETS = {
         bg: { morning: 'bg_morning.jpg', noon: 'bg_noon.jpg', evening: 'bg_evening.jpg', night: 'bg_night.jpg', bed: 'bg_bed.jpg' },
         maid: { sayo: 'sayo_normal.png', kokoa: 'kokoa_normal.png', sayo_h: 'sayo_h.png', kokoa_h: 'kokoa_h.png' }
@@ -239,14 +238,7 @@
 
     function toggleUI() {
         const uiElements = document.querySelectorAll('.ui-el');
-        const isHidden = uiElements[0].classList.contains('ui-invisible');
         uiElements.forEach(el => el.classList.toggle('ui-invisible'));
-        if (!isHidden) {
-            const overlay = document.createElement('div');
-            overlay.id = 'ui-overlay'; overlay.style = "position:absolute; inset:0; z-index:100; cursor:pointer;";
-            overlay.onclick = () => { toggleUI(); overlay.remove(); };
-            document.getElementById('game-viewport').appendChild(overlay);
-        }
     }
 
     function handleBed() {
@@ -273,7 +265,7 @@
         const charLayer = document.getElementById('char-layer');
         document.getElementById('bg-layer').style.backgroundImage = `url(${ASSETS.bg.bed})`;
         charLayer.src = ASSETS.maid[state.maidType + "_h"];
-        charLayer.style.left = "2%"; 
+        charLayer.style.left = "50px"; 
         document.getElementById('message-area').classList.add('h-window-style');
         document.getElementById('intimate-ui').style.display = "flex";
         displayMsg(`熱を帯びた${state.maidName}を抱き寄せました……。`);
@@ -284,7 +276,6 @@
         const actionImg = `${state.maidType}_${act}.jpg`;
         charLayer.onerror = () => { charLayer.src = ASSETS.maid[state.maidType + "_h"]; charLayer.onerror = null; };
         charLayer.src = actionImg;
-
         const msgs = { kiss: "深く口づけました。", breast: "胸を愛撫しました。", clit: "敏感な部分を刺激しました。", finger: "指を挿入しました。", insert: "最後まで繋がりました……。", naka: "内側にすべてを注ぎ込みました……。", check: `${state.maidName}は蕩けた表情で吐息を漏らしています。` };
         if (act === 'insert' || act === 'naka') { document.getElementById('btn-nakadashi').classList.remove('hidden'); }
         displayMsg(msgs[act] || "...");
@@ -298,7 +289,7 @@
             document.getElementById('time-indicator').style.display = "flex";
             document.getElementById('btn-nakadashi').classList.add('hidden');
             document.getElementById('message-area').classList.remove('h-window-style');
-            charLayer.style.left = "15%";
+            charLayer.style.left = "200px";
             charLayer.src = ASSETS.maid[state.maidType];
             state.mode = "normal"; nextDay();
         }
