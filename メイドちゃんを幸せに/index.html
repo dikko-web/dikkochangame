@@ -33,10 +33,29 @@
             transform-origin: center center;
         }
 
-        .screen { position: absolute; inset: 0; display: none; z-index: 1; }
+        .screen { position: absolute; inset: 0; display: none; }
         .screen.active { display: block; }
 
-        /* タイトル・プロローグ・選択画面 */
+        /* レイヤー管理 */
+        #message-area { z-index: 500 !important; }
+        #intimate-ui { z-index: 400 !important; }
+        #side-menu { z-index: 300 !important; }
+        #config-window { z-index: 1000 !important; display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; }
+
+        /* 立ち絵の境界線バグ対策 */
+        #char-layer, #npc-layer { 
+            position: absolute; bottom: 0; height: 760px; pointer-events: none; object-fit: contain;
+            image-rendering: -webkit-optimize-contrast; 
+            backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            transform: translateZ(0); -webkit-transform: translateZ(0);
+            outline: 1px solid transparent; /* PNG端の線を消すハック */
+            border: none;
+        }
+        #char-layer { left: 200px; z-index: 5; animation: breathing 4s ease-in-out infinite; }
+        #npc-layer { right: 100px; z-index: 4; display: none; opacity: 0; transition: 0.5s; }
+
+        @keyframes breathing { 0%, 100% { transform: translateY(0) translateZ(0); } 50% { transform: translateY(-8px) translateZ(0); } }
+
         #title-screen { 
             background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('bg_title.jpg') center/cover no-repeat;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -48,7 +67,7 @@
         }
 
         #intro-screen { background: #000; color: #fff; display: flex; align-items: center; justify-content: center; padding: 100px; cursor: pointer; }
-        #intro-text { font-size: 32px; line-height: 2.2; text-align: center; max-width: 1000px; transition: opacity 0.5s ease; white-space: pre-wrap; }
+        #intro-text { font-size: 32px; line-height: 2.2; text-align: center; max-width: 1000px; transition: opacity 0.5s ease; white-space: pre-wrap; pointer-events: none;}
 
         .noble-btn {
             background: var(--noble-gold); border: 4px double #5c4b12; border-radius: 4px;
@@ -65,31 +84,29 @@
             border-left: 1px solid rgba(255,255,255,0.1); overflow: hidden;
         }
         .maid-card:hover { background: rgba(255,255,255,0.08); flex: 1.3; }
-        .maid-card .maid-img { height: 95%; width: 100%; background-position: bottom center; background-repeat: no-repeat; background-size: contain; }
-        .maid-name-plate { position: absolute; bottom: 50px; background: var(--ui-window-bg); padding: 15px 60px; font-size: 36px; border: 2px solid var(--ui-accent); }
+        .maid-card .maid-img { height: 95%; width: 100%; background-position: bottom center; background-repeat: no-repeat; background-size: contain; pointer-events: none; }
+        .maid-name-plate { position: absolute; bottom: 50px; background: var(--ui-window-bg); padding: 15px 60px; font-size: 36px; border: 2px solid var(--ui-accent); pointer-events: none;}
 
-        /* メインUI */
         #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: 1s; }
-        #char-layer { position: absolute; bottom: 0; left: 200px; height: 760px; pointer-events: none; z-index: 5; object-fit: contain; animation: breathing 4s ease-in-out infinite; }
-        @keyframes breathing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         
-        .glass-window { background: var(--ui-window-bg); border: 1px solid var(--ui-accent); padding: 20px; color: var(--ui-accent); backdrop-filter: blur(4px); }
-        #side-menu { position: absolute; top: 100px; right: 40px; width: 480px; z-index: 10; }
-        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .glass-window { background: var(--ui-window-bg); border: 1px solid var(--ui-accent); padding: 25px; color: var(--ui-accent); backdrop-filter: blur(4px); }
+        #side-menu { position: absolute; top: 100px; right: 40px; width: 480px; }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .action-btn { background: var(--btn-bg); border: 1px solid var(--ui-accent); padding: 15px 5px; cursor: pointer; font-family: inherit; font-size: 22px; display: flex; align-items: center; justify-content: center; }
         
-        #message-area { position: absolute; bottom: 20px; left: 20px; right: 20px; height: 180px; z-index: 10; cursor: pointer; }
-        #message-text { font-size: 26px; line-height: 1.6; padding: 10px; }
+        /* メッセージエリアの余白修正（名前切れ対策） */
+        #message-area { position: absolute; bottom: 20px; left: 20px; right: 20px; height: 200px; cursor: pointer; }
+        #message-text { font-size: 28px; line-height: 1.6; padding: 20px 100px; overflow-wrap: break-word; pointer-events: none; }
 
-        /* 行為UI（透過） */
-        #intimate-ui { position: absolute; top: 40px; left: 780px; width: 580px; display: none; z-index: 20; flex-direction: column; gap: 12px; }
+        #intimate-ui { position: absolute; top: 40px; left: 780px; width: 580px; display: none; flex-direction: column; gap: 12px; }
         .h-group { background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid rgba(255,255,255,0.5); color: #fff; backdrop-filter: blur(2px); }
         .stamina-container { width: 100%; height: 25px; background: rgba(0,0,0,0.5); border: 1px solid #fff; margin-top: 5px; overflow: hidden; }
         #stamina-fill { height: 100%; width: 100%; background: #2ecc71; transition: 0.3s; }
         
-        .hidden { display: none !important; }
+        .config-label { display: block; margin: 15px 0 5px; font-weight: bold; font-size: 20px;}
+        input[type="range"] { width: 100%; cursor: pointer; height: 20px;}
 
-        /* タップエフェクト */
+        .hidden { display: none !important; }
         .tap-effect {
             position: absolute; width: 20px; height: 20px; background: rgba(255, 255, 255, 0.6);
             border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%);
@@ -123,6 +140,16 @@
         </div>
     </div>
 
+    <div id="config-window" class="glass-window">
+        <h2 style="margin:0; border-bottom:2px solid #333; padding-bottom:10px;">設定</h2>
+        <label class="config-label">BGM音量</label>
+        <input type="range" id="vol-bgm" min="0" max="1" step="0.1" value="0.5" onchange="updateVolume()">
+        <label class="config-label">ボイス音量</label>
+        <input type="range" id="vol-voice" min="0" max="1" step="0.1" value="1.0">
+        <br><br>
+        <button class="action-btn" style="width:100%" onclick="toggleConfig()">閉じる</button>
+    </div>
+
     <div id="naming-screen" class="screen">
         <div class="glass-window" style="width: 450px; margin: 150px auto; text-align: center;">
             <p style="font-size:20px;">彼女に新しい名と居場所を。</p>
@@ -133,15 +160,18 @@
     </div>
 
     <div id="main-screen" class="screen">
+        <div id="bg-layer"></div>
+        <img id="npc-layer" src="">
+        <img id="char-layer" src="">
+        
         <div id="time-indicator" style="position: absolute; top: 20px; right: 40px; display: flex; gap: 8px; z-index: 100; padding: 10px 20px; background: var(--ui-window-bg); border: 2px solid var(--ui-accent);">
             <div style="display: flex; align-items: center; gap: 8px;">朝<div class="time-slot" id="slot-0" style="width:30px;height:15px;border:1px solid #333"></div><div class="time-slot" id="slot-1" style="width:30px;height:15px;border:1px solid #333"></div></div>
             <div style="display: flex; align-items: center; gap: 8px;">昼<div class="time-slot" id="slot-2" style="width:30px;height:15px;border:1px solid #333"></div><div class="time-slot" id="slot-3" style="width:30px;height:15px;border:1px solid #333"></div></div>
             <div style="display: flex; align-items: center; gap: 8px;">夜<div class="time-slot" id="slot-4" style="width:30px;height:15px;border:1px solid #333"></div><div class="time-slot" id="slot-5" style="width:30px;height:15px;border:1px solid #333"></div></div>
         </div>
-        <div id="bg-layer"></div>
-        <img id="char-layer" src="">
+
         <div id="side-menu" class="glass-window">
-            <div style="border-bottom: 2px solid #333; margin-bottom: 10px; font-weight: bold; display: flex; justify-content: space-between; font-size: 24px;">
+            <div style="border-bottom: 2px solid #333; margin-bottom: 15px; font-weight: bold; display: flex; justify-content: space-between; font-size: 24px;">
                 <span id="display-maid-name">NAME</span><span id="display-day">Day 1</span>
             </div>
             <div class="button-grid">
@@ -150,7 +180,7 @@
                 <button class="action-btn" onclick="handleAction('out')">外出</button>
                 <button class="action-btn" onclick="handleAction('service')">ご奉仕</button>
                 <button class="action-btn" onclick="handleAction('dress')">着替え</button>
-                <button class="action-btn" onclick="handleAction('status')">状態</button>
+                <button class="action-btn" onclick="toggleConfig()">設定</button>
                 <button class="action-btn hidden" id="btn-sleep" style="grid-column: span 2;" onclick="handleBed()">ベッドへ</button>
             </div>
         </div>
@@ -190,365 +220,318 @@
 </div>
 
 <script>
-    function createTapEffect(e) {
-        const effect = document.createElement('div');
-        effect.className = 'tap-effect';
-        effect.style.left = `${e.clientX}px`;
-        effect.style.top = `${e.clientY}px`;
-        document.body.appendChild(effect);
-        setTimeout(() => effect.remove(), 500);
+    let audioCtx = null;
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
+    function playTypeSound(pitch = 1.0) {
+        if (!audioCtx) return;
+        const vol = document.getElementById('vol-voice').value;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440 * pitch, audioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        gain.gain.setValueAtTime(0.5 * vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function updateVolume() { if (currentBGM) currentBGM.volume = document.getElementById('vol-bgm').value; }
+    function toggleConfig() { const win = document.getElementById('config-window'); win.style.display = (win.style.display === 'block') ? 'none' : 'block'; }
+    function createTapEffect(e) { const ef = document.createElement('div'); ef.className='tap-effect'; ef.style.left=`${e.clientX}px`; ef.style.top=`${e.clientY}px`; document.body.appendChild(ef); setTimeout(()=>ef.remove(), 500); }
+
     const AUDIO = { bgm_intro: 'bgm_intro.mp3', bgm_daily: 'bgm_daily.mp3', bgm_h: 'bgm_h.mp3', se_insert: 'se_insert.mp3', se_naka: 'se_naka.mp3' };
-    
-    // --- 画像アセット設定（裸と行為デフォルトを分離） ---
     const ASSETS = { 
-        bg: { morning: 'bg_morning.jpg', noon: 'bg_noon.jpg', evening: 'bg_evening.jpg', night: 'bg_night.jpg', bed: 'bg_bed.jpg' },
-        maid: { 
-            sayo: 'sayo_normal.png', 
-            kokoa: 'kokoa_normal.png', 
-            sayo_nude: 'sayo_nude.png', 
-            kokoa_nude: 'kokoa_nude.png',
-            sayo_h: 'sayo_h.png', 
-            kokoa_h: 'kokoa_h.png' 
-        }
+        bg: { morning: 'bg_morning.jpg', noon: 'bg_noon.jpg', evening: 'bg_evening.jpg', night: 'bg_night.jpg', bed: 'bg_bed.jpg', street: 'bg_STREET.JPG' },
+        maid: { sayo: 'sayo_normal.png', kokoa: 'kokoa_normal.png', sayo_nude: 'sayo_nude.png', kokoa_nude: 'kokoa_nude.png', sayo_h: 'sayo_h.png', kokoa_h: 'kokoa_h.png' },
+        npc: { anu: 'anu.png', chief: 'chief.png', momoki: 'momoki.png', homu: 'homu.png' }
     };
 
-    let state = { 
-        masterName: "ご主人様", maidName: "", maidType: "sayo", 
-        day: 1, timeIndex: 0, love: 0, mode: "normal",
-        stamina: 100, nakaCount: 0, dress: "normal"
-    };
-
+    let state = { masterName: "ご主人様", maidName: "", maidType: "sayo", day: 1, timeIndex: 0, love: 0, mode: "normal", stamina: 100, nakaCount: 0, dress: "normal" };
     let currentBGM = null;
     let dialogueCallback = null;
     let introIdx = 0;
-    let isIntroAnimating = false;
+    let isTyping = false;
+    let typingTimer = null;
+    let currentFullText = "";
 
-    const INTRO_LINES = [
-        "冷たい雨が降る、薄暗い奴隷市場の片隅。",
-        "そこには、『商品』にすらなれなかった異種族の少女がいた。",
-        "店主は吐き捨てるように言う。\n「そいつは欠陥品だ。言葉も話さねえ、愛想もねえ、ただのゴミだよ」",
-        "檻に閉じ込められ、震える彼女の瞳には、一切の光がなかった。",
-        "……放っておけなかった。",
-        "あなたは金貨を投げ、その少女を買い取った。",
-        "「勝手にしろ、返品はきかねえぞ！」\n背後の罵声を聞き流し、あなたは彼女の手を取った。",
-        "あの日、あなたが救い出したのは……"
-    ];
+    const INTRO_LINES = ["冷たい雨が降る、薄暗い奴隷市場の片隅。", "そこには、『商品』にすらなれなかった異種族の少女がいた。", "店主は吐き捨てるように言う。\n「そいつは欠陥品だ。言葉も話さねえ、愛想もねえ、ただのゴミだよ」", "檻に閉じ込められ、震える彼女の瞳には、一切の光がなかった。", "……放っておけなかった。", "あなたは金貨を投げ、その少女を買い取った。", "あの日、あなたが救い出したのは……"];
 
     const DIALOGUES = {
         sayo: {
-            morning: ["おはようございます、{m}。……今日も捨てずにいてくれて、ありがとうございます。", "朝ですね。あなたが望むなら、私はいつでもあなたの傍に。"],
-            talk: ["私はあなたの所有物。使い潰していただいても構いません……。", "……私だけを、見ていてほしいのです。"],
-            pat: ["……ぁ、温かい。あなたの手の温もりがないと、不安なのです。", "……もっと。捨てられたゴミだった私を、もっと愛してください。"],
-            pat_nude: ["ぁ……裸の私を、そんなに慈しんでくださるなんて……。……私は、あなたの物です……。", "……もっと、撫でてください。あなたの手の届かない場所なんて、この身体にはありません。"],
-            service: ["お疲れですか、{m}？ 私にできることなら、何でも命じてください。"],
-            service_nude: ["裸で、あなたにお仕えする……。これこそが、捨てられた私の真実の姿。……どうぞ、何なりと。", "見苦しくないでしょうか……？ でも、あなたが望むなら、私はこの姿で一生を過ごします。"],
-            dress_nude: "……あ、裸、ですか……？ わかりました。……少し恥ずかしいですが、あなたの命令なら、すべてをさらけ出します。",
+            pitch: 0.7,
+            morning: [
+                "おはようございます、{m}。……あ、いえ、私は捨てられた身。何でも命じてください。",
+                "……夢を見ていました。あなたが私をまた捨てる夢を。……今は、ここに居てもいいのですね？",
+                "朝食ですね。あなたに捨てられないよう、心を込めて作りました。",
+                "{m}……今朝も、私の隣にいてくださって嬉しいです。……夢じゃ、ないんですよね？"
+            ],
+            talk: [
+                "私はあなたの所有物です。……他の方を見ないでください。私だけを、見ていてほしいのです。",
+                "掃除も洗濯も、完璧にこなします。ですから……ずっと側に置いてください。",
+                "{m}、もし私が役に立たなくなったら……その時は、殺してください。他の誰かに渡されるのは、耐えられません。",
+                "……あなたの匂いがするこの屋敷が、私にとっての世界のすべてです。",
+                "奴隷市場では、ただ死を待つだけでした。光をくれたのは、{m}……あなただけです。"
+            ],
+            pat: [
+                "……ぁ、温かい。……もっと、もっと撫でてください。あなたの手の温もりがないと、不安なのです。",
+                "私が……嬉しいと思ってもいいのでしょうか。捨てられたゴミだった、この私が……。",
+                "……離さないでくださいね？ 絶対に。絶対に……。",
+                "あなたの手の跡が残るくらい……もっと、強く触れてくださっても良いのですよ？"
+            ],
+            pat_nude: [
+                "ぁ……裸の私を、そんなに慈しんでくださるなんて……。私は、あなたの物です……。",
+                "……もっと、撫でてください。あなたの手の届かない場所なんてありません。"
+            ],
+            service: [
+                "お疲れですか、{m}？ 汚れた場所はありませんか？ 私の視界に映るすべてを、私が清めて差し上げます。",
+                "私の存在意義は、{m}に尽くすことだけです。……どうか、私を使い潰してください。",
+                "膝枕……よろしいのですか？ ……あぁ、嬉しい。こうしてあなたの重みを感じられるのが、一番のご奉仕です。"
+            ],
+            service_nude: ["裸で、あなたにお仕えする……。これこそが、捨てられた私の真実の姿。……どうぞ、何なりと。"],
+            dress_nude: "……あ、裸、ですか……？ わかりました。……少し恥ずかしいですが、すべてをさらけ出します。",
             dress_normal: "メイド服を……。ありがとうございます。背中のリボン、結んでいただけますか？",
-            h_insert: "あぁ……っ、あつい……。{m}の熱いところが、私の中を、壊していくみたいで……っ！",
-            h_naka_1: "あぁっ！ 溢れる……マスターの、熱いのが……っ！ これで私は、あなたのものです……！",
-            h_naka_repeat: "ひゃぁぁぁっ！ また、きた……っ！ 嬉しい……もっと、もっと中を汚して……私をあなたの色で塗り潰してぇ！",
+            // 行為セリフ
+            h_kiss: ["ん……っ。マスターの唇……とても熱くて、蕩けてしまいそうです……。", "……ん、ちゅ。もっと……もっと慈しんでください。私は、あなたの所有物なのですから。"],
+            h_breast: ["ぁ……胸、触られるの……好きです。あなたの手の重みを、もっと刻んでください。", "……っ！ 乳房まで、あなたのものに。……嬉しいです。汚してください、マスター。"],
+            h_clit: ["ひゃあぁっ！ そこ……っ、そこはダメ……あ、あぁぁ！ 脳が、真っ白に……っ！", "……っ、あ。敏感なところ……マスターに、全部、握られて……ふぁあ！"],
+            h_finger: ["……指、入ってきました。私の中を、あなたの形に作り変えて……もっと深く……っ！", "あぁぁっ！ 指だけで……こんな……。私をめちゃくちゃにしてください！"],
+            h_insert: "あぁ……っ、あつい……。{m}の熱いところが、私を塗り潰してぇ！",
+            h_naka_1: "あぁっ！ 溢れる……マスターの、熱いのが……っ！ 私は、あなたのものです……！",
+            h_naka_repeat: "ひゃぁぁぁっ！ また、きた……っ！ 嬉しい……もっと中を汚して……私を塗り潰してぇ！",
             h_bukkake: "んっ、ぁ……。外に……勿体ないけれど、あなたの汚れなら、私、誇らしいです……。",
             h_faint: "……ぁ……あ……。……す、き……ます、た……（サヨは意識を失いました）",
-            after_h: ["……はぁ、はぁ。……嬉しい。あなたの種で、私が満たされていく。"]
+            after_h: ["……はぁ、はぁ。……嬉しい。あなたの種で、私が満たされていく。……私はあなたのモノです。"],
+            out_anu: ["アヌ「あら、サヨさん。今日もご主人様にべったりね。相変わらず一途なんだから。」", "サヨ「アヌさん……。はい。私は{m}に救われた身ですから、一生離れるつもりはありません。」", "アヌ「ふふっ、その執着心、ちょっと羨ましいわね。私ももっと甘え上手にならなくちゃ。」"],
+            out_chief: ["メイド長「サヨさん、お仕事の調子はどうかしら？ 顔色が良くなったようで安心したわ。」", "サヨ「メイド長。ありがとうございます。{m}が毎日、私に役割と……愛をくださるおかげです。」", "メイド長「ふふ、そうね。主人のために頑張るのよ？」"],
+            out_momoki: ["ももき「わぁ、サヨちゃん、今日もご主人様にべったり！ 羨ましいなー。」", "サヨ「ももきさん……。はい、{m}は私のすべてですから。」", "ももき「いいなー！ 帰ったらももきもご主人様にいっぱい愛してもらお！ 負けないんだから！」"],
+            out_homu: ["ほむ「今日もご主人様とお散歩ですか？ 仲が良いな！」", "サヨ「ほむさん。ええ、{m}と一緒なら、どこへ行っても天国のように感じます。」", "ほむ「うむ。信頼できる主（あるじ）に命を捧げる。それこそが、我ら異種族が生き残る唯一の道よな」"]
         },
         kokoa: {
-            morning: ["……ん。……捨てられてない。……よかった。おはよ、{m}。", "……朝。光がまぶしい。……あなたの影に、隠れさせて……？"],
-            talk: ["……ねぇ、私のこと……好き？ ……嫌いになったら、その場で殺してね。", "……他の女の人の匂いがする。……嫌。私だけを、嗅いで。"],
-            pat: ["……んぅ。スキンシップ, だいすき。……もっと, 強く。跡が残るくらい……。", "……なでてくれないと、死んじゃう。……ほんとだよ？"],
-            pat_nude: ["……ん。……裸、触られるの、気持ちいい……。……もっと。……いっぱい。……ぐちゃぐちゃにして。", "……{m}の手, あつい。……裸、すき。……あなたのペット, だから。"],
-            service: ["……ご奉仕、する。……何がいい？ 抱っこ……？"],
-            service_nude: ["……裸、楽。……あなたも, 脱ぐ……？ ……私が、脱がしてあげる。", "……このまま、何でもするよ。……お掃除も、お料理も……。……いいでしょ？"],
+            pitch: 1.3,
+            morning: [
+                "……ん。……捨てられてない。……よかった。……おはよ、{m}。",
+                "……お腹、すいた。……あなたが食べさせて。……じゃないと、食べない。",
+                "……朝。……光がまぶしい。……あなたの影に、隠れさせて……？",
+                "……おはよう。……今日も、私のこと……見ててくれる？"
+            ],
+            talk: [
+                "……ねぇ、私のこと……好き？ ……嫌いになったら、その場で殺してね。",
+                "……他の女の人の匂いがする。……嫌。……私だけを、嗅いで。",
+                "……言葉、へただけど。……あなたがいれば、それだけでいい。",
+                "……屋敷の外、行きたくない。……ここで、二人だけで、腐っていきたい……。",
+                "……{m}がいないと、息ができない。……ほんとだよ？"
+            ],
+            pat: [
+                "……んぅ。……これ、だいすき。……もっと、強く。跡が残るくらい……。",
+                "……えへへ。……私はあなたのペット。……ずっと、飼っててね。",
+                "……なでてくれないと、死んじゃう。……ほんとだよ？",
+                "……あつい。……{m}の手、溶けそう……。"
+            ],
+            pat_nude: [
+                "……ん。……裸、触られるの、気持ちいい……。……もっと。……いっぱい。……ぐちゃぐちゃにして。",
+                "……{m}の手、あつい。……裸、すき。……あなたのペット、だから。"
+            ],
+            service: [
+                "……ご奉仕、する。……何がいい？ ……抱っこ？ ……耳のお掃除……？",
+                "……{m}が喜ぶこと、いっぱいしたい。……捨てられないように、頑張るから。",
+                "……疲れてるの？ ……じゃあ、私がぎゅーってしてあげる。……これが一番、ご奉仕になるでしょ？"
+            ],
+            service_nude: ["……裸、楽。……あなたも、脱ぐ……？ ……私が、脱がしてあげる。"],
             dress_nude: "……裸？ ……いいよ。……ほら。……全部、見て。……触って。",
             dress_normal: "……服。……ちょっと、寂しい。……また、すぐに脱がせてね？",
+            // 行為セリフ
+            h_kiss: ["ん……ちゅ。……おいしい。……{m}の味、全部、飲み込みたい……。", "……ん、ぷは。……もっと。もっと、ちゅーして。……寂しいの。"],
+            h_breast: ["……ん。……胸、いっぱい触って。……これ、{m}のものだもん。", "……ぁ。……大きく、なっちゃう。……はずかしい。……苦しい。……でも、すき。"],
+            h_clit: ["ひゃんっ！ ……そこ、へんな感じ……っ。……あつい、あついよ……！", "……んぅ！ ……いっちゃう。……こわれる。……もっと、いじめて……。"],
+            h_finger: ["……なか。……ごりごり、する。……マスターの指、すごい。……もっと奥まで。", "ぁ……んっ！ ……なか、あつい。……ぐちゃぐちゃに、混ぜて……。"],
             h_insert: "……ん。……すご, いの……。……私の中, 全部、{m}で埋まった……。",
             h_naka_1: "ぁ……んっ！ ……でた。あったかい。……逃がさない。これ、私の宝物にする。",
-            h_naka_repeat: "ふぁ……っ！？ ……また……だ。……すごい、いっぱい。……壊れるくらい、中、ぐちゃぐちゃにして……。",
+            h_naka_repeat: "ふぁ……っ！？ ……また……だ。……すごい、いっぱい。ぐちゃぐちゃにして……。",
             h_bukkake: "……ん。……いっぱい, かかった。……あなたの匂い、身体に染みついちゃう……えへへ。",
             h_faint: "……もう, むり……。……あ, つい……の……（ここあは満足げに目を閉じました）",
-            after_h: ["……ん。……あつい。……中、ドロドロ。……これ、私たちの証。"]
+            after_h: ["……ん。……あつい。……中、ドロドロ。……これ、私たちの証。"],
+            out_anu: ["アヌ「ここあちゃん、こんにちは！ 今日もご主人様の後ろに隠れて、可愛いわねぇ。」", "ここあ「……ん。……アヌ。……やだ。……{m}は、私のだから。見ないで。」", "アヌ「あらあら、独占欲が強いわね。でも、それくらい愛されてるなら安心ね！」"],
+            out_chief: ["メイド長「ここあ、ちゃんとご主人様のお役に立てているかしら？ 挨拶は忘れないようにね。」", "ここあ「……ん。……大丈夫。……{m}は、私のこと、いっぱい甘やかしてくれるから。」", "メイド長「ふふ、困った子ね。絆は本物のようね。」"],
+            out_momoki: ["ももき「わー！ ここあちゃん、今日もべったりじゃん！ 羨ましいなー。」", "ここあ「……ん。……ももき。……{m}は、渡さないよ。」", "ももき「わかってるって！ ももきも帰ったらご主人様に愛してもらお！ 楽しみだなー！」"],
+            out_homu: ["ほむ「ここあ！ 見ていて微笑ましいぞ！」", "ここあ「……ん。……ほむ。……私は、{m}に拾われたの。だから、ずっと、一緒にいるの。」", "ほむ「ああ、その一途な想い、ご主人様にもきっと伝わっているぞ。素敵な関係だな！」"]
         }
     };
 
-    function showScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        const target = document.getElementById(id);
-        if (target) target.classList.add('active');
+    function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); const t = document.getElementById(id); if(t) t.classList.add('active'); }
+    function playBGM(key) { if(currentBGM){currentBGM.pause(); currentBGM.currentTime=0;} currentBGM=new Audio(AUDIO[key]); currentBGM.loop=true; currentBGM.volume=document.getElementById('vol-bgm').value; currentBGM.play().catch(e=>{}); }
+    function playSE(key) { const se=new Audio(AUDIO[key]); se.play().catch(e=>{}); }
+
+    function startIntro() { initAudio(); introIdx=0; showScreen('intro-screen'); playBGM('bgm_intro'); nextIntro(); }
+    function handleIntroClick() { initAudio(); nextIntro(); }
+    function nextIntro() {
+        if(isTyping){skipTyping(); return;}
+        if(introIdx < INTRO_LINES.length){ displayMsgTyping(INTRO_LINES[introIdx], 1.0, 'intro-text'); introIdx++; }
+        else { showScreen('selection-screen'); }
     }
 
-    function playBGM(key) {
-        if (currentBGM) { currentBGM.pause(); currentBGM.currentTime = 0; }
-        currentBGM = new Audio(AUDIO[key]);
-        currentBGM.loop = true;
-        currentBGM.play().catch(e => console.log("Audio Blocked"));
-    }
-
-    function playSE(key) {
-        const se = new Audio(AUDIO[key]);
-        se.play().catch(e => console.log("SE Blocked"));
-    }
-
-    function startIntro() {
-        introIdx = 0;
-        playBGM('bgm_intro');
-        showScreen('intro-screen');
-        displayIntroText();
-    }
-
-    function displayIntroText() {
-        if (isIntroAnimating) return;
-        const textEl = document.getElementById('intro-text');
-        textEl.style.opacity = 0;
-        isIntroAnimating = true;
-        setTimeout(() => {
-            textEl.innerText = INTRO_LINES[introIdx];
-            textEl.style.opacity = 1;
-            isIntroAnimating = false;
-        }, 300);
-    }
-
-    function handleIntroClick() {
-        if (isIntroAnimating) return;
-        introIdx++;
-        if (introIdx < INTRO_LINES.length) {
-            displayIntroText();
-        } else {
-            showScreen('selection-screen');
-        }
-    }
-
-    function selectMaid(type) {
-        state.maidType = type;
-        document.getElementById('maid-name').value = (type === 'sayo' ? "サヨ" : "ここあ");
-        showScreen('naming-screen');
-    }
-
+    function selectMaid(type) { state.maidType=type; document.getElementById('maid-name').value=(type==='sayo'?"サヨ":"ここあ"); showScreen('naming-screen'); }
     function finalizeNaming() {
         state.masterName = document.getElementById('master-name').value || "ご主人様";
-        state.maidName = document.getElementById('maid-name').value || (state.maidType === 'sayo' ? "サヨ" : "ここあ");
+        state.maidName = document.getElementById('maid-name').value || (state.maidType==='sayo'?"サヨ":"ここあ");
         document.getElementById('display-maid-name').innerText = state.maidName;
-        state.day = 1; state.timeIndex = 0; state.dress = "normal";
-        playBGM('bgm_daily');
-        updateUI();
-        showScreen('main-screen');
+        playBGM('bgm_daily'); state.day=1; state.timeIndex=0; updateUI(); showScreen('main-screen');
         displayMsg(`${state.maidName}「${getDialogue('morning')}」`);
     }
 
-    function getDialogue(cat) {
-        const pool = DIALOGUES[state.maidType][cat];
-        const line = pool[Math.floor(Math.random() * pool.length)];
-        return line.replace(/{m}/g, state.masterName);
+    // --- メッセージ表示（名前置換を最優先実行） ---
+    function displayMsg(txt) {
+        if(!txt || txt === "undefined") { txt = "（静かにあなたを見つめています）"; }
+        const processedTxt = txt.replace(/{m}/g, state.masterName);
+        const pitch = DIALOGUES[state.maidType] ? DIALOGUES[state.maidType].pitch : 1.0;
+        displayMsgTyping(processedTxt, pitch, 'message-text');
     }
 
-    function displayMsg(txt) {
-        document.getElementById('message-text').innerText = txt;
+    function displayMsgTyping(txt, pitch, targetId) {
+        if(typingTimer) clearInterval(typingTimer);
+        isTyping=true; currentFullText=txt;
+        const el=document.getElementById(targetId); if(!el)return;
+        el.innerText=""; let i=0;
+        typingTimer = setInterval(()=>{
+            if(i<txt.length){
+                el.innerText+=txt[i];
+                if(txt[i]!==" " && txt[i]!=="\n" && txt[i]!=="　") playTypeSound(pitch);
+                i++;
+            } else { clearInterval(typingTimer); isTyping=false; }
+        }, 50);
+    }
+    function skipTyping(){ clearInterval(typingTimer); const el=document.getElementById('message-text')||document.getElementById('intro-text'); if(el) el.innerText=currentFullText; isTyping=false; }
+    function handleMsgClick(){ initAudio(); if(isTyping){skipTyping(); return;} if(dialogueCallback){const cb=dialogueCallback; dialogueCallback=null; cb();} }
+
+    function getDialogue(cat) { 
+        const pool=DIALOGUES[state.maidType][cat]; 
+        if(!pool) return "（無言）"; 
+        return Array.isArray(pool)?pool[Math.floor(Math.random()*pool.length)]:pool; 
     }
 
     function handleAction(type) {
-        if (state.timeIndex > 5) { handleBed(); return; }
-        if (type === 'talk') { 
-            state.love += 1; 
-            displayMsg(`${state.maidName}「${getDialogue('talk')}」`); 
-        }
-        else if (type === 'pat') { 
-            state.love += 2; 
-            const cat = (state.dress === 'nude') ? 'pat_nude' : 'pat';
-            displayMsg(`${state.maidName}「${getDialogue(cat)}」`); 
-        }
-        else if (type === 'service') { 
-            state.love += 4; 
-            const cat = (state.dress === 'nude') ? 'service_nude' : 'service';
-            displayMsg(`${state.maidName}「${getDialogue(cat)}」`); 
-        }
-        else if (type === 'out') { 
-            state.love += 3; 
-            displayMsg(`${state.maidName}「${getDialogue('morning')}」`); 
-        }
-        else if (type === 'dress') {
-            handleDress();
-            return;
-        }
-        state.timeIndex++;
-        updateUI();
+        if(isTyping)return;
+        if(state.timeIndex > 5){ handleBed(); return; }
+        if(type==='talk'){ state.love+=1; displayMsg(`${state.maidName}「${getDialogue('talk')}」`); }
+        else if(type==='pat'){ state.love+=2; displayMsg(`${state.maidName}「${getDialogue(state.dress==='nude'?'pat_nude':'pat')}」`); }
+        else if(type==='service'){ state.love+=4; displayMsg(`${state.maidName}「${getDialogue(state.dress==='nude'?'service_nude':'service')}」`); }
+        else if(type==='out'){ startOuting(); return; }
+        else if(type==='dress'){ handleDress(); return; }
+        else if(type==='status'){ displayMsg(`好感度: ${state.love} / 服装: ${state.dress==='nude'?'裸':'メイド服'}`); return; }
+        state.timeIndex++; updateUI();
+    }
+
+    function startOuting() {
+        const pool = ['anu', 'chief', 'momoki', 'homu'];
+        const npcType = pool[Math.floor(Math.random()*pool.length)];
+        const lines = DIALOGUES[state.maidType]['out_' + npcType];
+        document.getElementById('side-menu').style.visibility="hidden";
+        document.getElementById('bg-layer').style.backgroundImage=`url(${ASSETS.bg.street})`;
+        const npcLayer = document.getElementById('npc-layer');
+        npcLayer.src = ASSETS.npc[npcType];
+        npcLayer.style.display = "block";
+        setTimeout(() => npcLayer.style.opacity = 1, 10);
+        let lIdx = 0;
+        const seq = () => {
+            if(lIdx < lines.length){ displayMsg(lines[lIdx]); lIdx++; dialogueCallback = seq; }
+            else {
+                npcLayer.style.opacity = 0;
+                setTimeout(() => npcLayer.style.display = "none", 500);
+                state.timeIndex++; state.love += 5; updateUI();
+                displayMsg(`${state.maidName}「……帰りましょう、{m}。やっぱり屋敷が一番落ち着きます。」`);
+            }
+        };
+        seq();
     }
 
     function handleDress() {
-        const choice = confirm("裸にしますか？（キャンセルで服を着せます）");
-        if (choice) {
-            state.dress = "nude";
-            displayMsg(`${state.maidName}「${DIALOGUES[state.maidType].dress_nude}」`);
-        } else {
-            state.dress = "normal";
-            displayMsg(`${state.maidName}「${DIALOGUES[state.maidType].dress_normal}」`);
-        }
-        state.timeIndex++;
-        updateUI();
+        const c = confirm("裸にしますか？（キャンセルで服を着せます）");
+        state.dress = c ? "nude" : "normal";
+        displayMsg(`${state.maidName}「${c ? getDialogue('dress_nude') : getDialogue('dress_normal')}」`);
+        state.timeIndex++; updateUI();
     }
 
     function handleBed() {
-        if (state.love >= 20) {
-            const lines = state.maidType === 'sayo' ? ["……あの、捨てないで。","私のすべてを、あなたに捧げますから。"] : ["……ねぇ。……もっと、あなたを感じたい。"];
-            document.getElementById('side-menu').style.visibility = "hidden";
-            playDialogue(lines, startIntimacy);
-        } else {
-            nextDay();
-        }
+        if(state.love >= 20){
+            const lines = state.maidType==='sayo'?["……あの、捨てないで。","私をめちゃくちゃにして、あなたの所有物だと刻んでください……。"]:["……ねぇ。……もっと、あなたを感じたい。","……壊れるくらい、全部。"];
+            document.getElementById('side-menu').style.visibility="hidden";
+            let lIdx=0;
+            const seq = () => {
+                if(lIdx<lines.length){ displayMsg(`${state.maidName}「${lines[lIdx]}」`); lIdx++; dialogueCallback=seq; }
+                else { startIntimacy(); }
+            };
+            seq();
+        } else { nextDay(); }
     }
 
     function startIntimacy() {
-        state.mode = "h";
-        state.stamina = 100;
-        state.nakaCount = 0;
-        document.getElementById('bg-layer').style.backgroundImage = `url(${ASSETS.bg.bed})`;
-        const char = document.getElementById('char-layer');
-        // --- 行為のデフォルトを _h.png に設定 ---
-        char.src = ASSETS.maid[state.maidType + "_h"];
-        char.style.left = "0px";
-        playBGM('bgm_h');
-        document.getElementById('intimate-ui').style.display = "flex";
-        updateStaminaUI();
-        displayMsg(`震える${state.maidName}を抱き寄せ、深く繋がりました……。`);
+        state.mode="h"; state.stamina=100; state.nakaCount=0;
+        document.getElementById('bg-layer').style.backgroundImage=`url(${ASSETS.bg.bed})`;
+        const char=document.getElementById('char-layer');
+        char.src=ASSETS.maid[state.maidType+"_h"]; char.style.left="0px";
+        playBGM('bgm_h'); document.getElementById('intimate-ui').style.display="flex";
+        updateStaminaUI(); displayMsg(`震える${state.maidName}を抱き寄せ、深く繋がりました……。`);
     }
 
     function hAction(act) {
-        const char = document.getElementById('char-layer');
-        char.src = `${state.maidType}_${act}.jpg`; 
-        char.onerror = () => { 
-            char.src = ASSETS.maid[state.maidType + "_h"]; 
-            char.onerror = null; 
-        };
+        if(isTyping)return;
+        const char=document.getElementById('char-layer');
+        char.src=`${state.maidType}_${act}.jpg`; char.onerror=()=>{char.src=ASSETS.maid[state.maidType+"_h"]; char.onerror=null;};
+        let cost = 10; let msg = ""; const d = DIALOGUES[state.maidType];
 
-        let cost = 10;
-        let msg = "";
-        const d = DIALOGUES[state.maidType];
-
-        // --- アクションごとの処理（キスで回復） ---
-        if (act === 'kiss') {
-            cost = -15; // 15回復
-            msg = "優しく、あるいは激しく口付け、彼女を慈しみました。体力が少し回復したようです。";
-        } else if (act === 'breast' || act === 'clit') {
-            cost = 10; msg = "執拗に彼女を責め立てました。";
-        } else if (act === 'finger') {
-            cost = 15; msg = "指で中をかき回し、あなたなしではいられない体に作り変えます。";
-        } else if (act === 'insert') {
-            cost = 20; msg = `${state.maidName}「${d.h_insert}」`;
-            playSE('se_insert');
-            document.getElementById('btn-naka').classList.remove('hidden');
-            document.getElementById('btn-bukkake').classList.remove('hidden');
-        } else if (act === 'naka') {
-            cost = 30; state.nakaCount++;
-            playSE('se_naka');
-            msg = (state.nakaCount === 1) ? `${state.maidName}「${d.h_naka_1}」` : `${state.maidName}「${d.h_naka_repeat}」`;
-        } else if (act === 'bukkake') {
-            cost = 25; msg = `${state.maidName}「${d.h_bukkake}」`;
-            playSE('se_naka');
-        } else if (act === 'check') {
-            cost = 0; msg = `${state.maidName}は蕩けた表情で、あなたの名を呼び続けています。`;
+        if(act==='kiss'){ cost=-15; msg = `${state.maidName}「${getDialogue('h_kiss')}」`; }
+        else if(act==='breast'){ cost=10; msg = `${state.maidName}「${getDialogue('h_breast')}」`; }
+        else if(act==='clit'){ cost=12; msg = `${state.maidName}「${getDialogue('h_clit')}」`; }
+        else if(act==='finger'){ cost=15; msg = `${state.maidName}「${getDialogue('h_finger')}」`; }
+        else if(act==='insert'){ cost=20; msg=`${state.maidName}「${d.h_insert}」`; playSE('se_insert'); document.getElementById('btn-naka').classList.remove('hidden'); document.getElementById('btn-bukkake').classList.remove('hidden'); }
+        else if(act==='naka'){ 
+            cost=35; state.nakaCount++; playSE('se_naka'); 
+            msg=(state.nakaCount===1)?`${state.maidName}「${d.h_naka_1}」` : `${state.maidName}「${d.h_naka_repeat}」`; 
         }
+        else if(act==='bukkake'){ cost=25; msg=`${state.maidName}「${d.h_bukkake}」`; playSE('se_naka'); }
+        else if(act==='check'){ cost=0; msg=`${state.maidName}は蕩けた表情であなたの名を呼び込んでいます。`; }
 
-        state.stamina -= cost;
-        // 上限を100に制限
-        if (state.stamina > 100) state.stamina = 100;
-
-        if (state.stamina <= 0) {
-            state.stamina = 0;
-            updateStaminaUI();
-            faint();
-        } else {
-            updateStaminaUI();
-            displayMsg(msg);
-        }
+        state.stamina -= cost; if(state.stamina > 100) state.stamina = 100;
+        if(state.stamina <= 0){ state.stamina = 0; updateStaminaUI(); faint(); } else { updateStaminaUI(); displayMsg(msg); }
     }
 
-    function faint() {
-        displayMsg(DIALOGUES[state.maidType].h_faint);
-        document.querySelectorAll('.h-btn').forEach(b => b.disabled = true);
-        dialogueCallback = () => { nextDay(); dialogueCallback = null; };
+    function faint() { 
+        displayMsg(DIALOGUES[state.maidType].h_faint); 
+        document.getElementById('intimate-ui').style.display="none"; 
+        dialogueCallback=()=>{nextDay();}; 
     }
-
-    function endIntimacy() {
-        if (confirm("行為を終了しますか？")) {
-            nextDay();
-        }
-    }
-
-    function updateStaminaUI() {
-        document.getElementById('stamina-text').innerText = state.stamina;
-        const fill = document.getElementById('stamina-fill');
-        fill.style.width = state.stamina + "%";
-        if (state.stamina < 30) fill.style.background = "#e74c3c";
-        else if (state.stamina < 60) fill.style.background = "#f1c40f";
-        else fill.style.background = "#2ecc71";
-    }
+    function endIntimacy() { if(confirm("行為を終了しますか？")) nextDay(); }
+    function updateStaminaUI() { document.getElementById('stamina-text').innerText=state.stamina; const fill=document.getElementById('stamina-fill'); fill.style.width=state.stamina+"%"; fill.style.background=state.stamina<30?"#e74c3c":"#2ecc71"; }
 
     function updateUI() {
         document.getElementById('display-day').innerText = `Day ${state.day}`;
-        for (let i = 0; i < 6; i++) {
-            const slot = document.getElementById(`slot-${i}`);
-            slot.style.background = (i < state.timeIndex) ? 'var(--slot-active)' : 'rgba(0,0,0,0.1)';
-        }
-
-        const bgs = [ASSETS.bg.morning, ASSETS.bg.morning, ASSETS.bg.noon, ASSETS.bg.evening, ASSETS.bg.night, ASSETS.bg.night];
-        document.getElementById('bg-layer').style.backgroundImage = `url(${bgs[state.timeIndex] || ASSETS.bg.morning})`;
-        
-        const char = document.getElementById('char-layer');
-        // 服装状態によって画像を切り分け
-        if (state.dress === "nude") {
-            char.src = ASSETS.maid[state.maidType + "_nude"]; // 日常の裸は sayo_nude.png
-        } else {
-            char.src = ASSETS.maid[state.maidType]; // 通常
-        }
-        char.style.left = "200px";
-
+        for (let i = 0; i < 6; i++) { const s=document.getElementById(`slot-${i}`); if(s) s.style.background=(i<state.timeIndex)?'var(--slot-active)':'rgba(0,0,0,0.1)'; }
+        const bgs=[ASSETS.bg.morning, ASSETS.bg.morning, ASSETS.bg.noon, ASSETS.bg.evening, ASSETS.bg.night, ASSETS.bg.night];
+        document.getElementById('bg-layer').style.backgroundImage=`url(${bgs[state.timeIndex]||ASSETS.bg.morning})`;
+        const char=document.getElementById('char-layer');
+        char.src=(state.dress==="nude")?ASSETS.maid[state.maidType+"_nude"]:ASSETS.maid[state.maidType];
+        char.style.left="200px";
         document.getElementById('btn-sleep').classList.toggle('hidden', state.timeIndex < 4);
-        document.getElementById('side-menu').style.visibility = "visible";
-    }
-
-    function playDialogue(lines, callback) {
-        let i = 0;
-        dialogueCallback = () => {
-            if (i < lines.length) {
-                displayMsg(`${state.maidName}「${lines[i]}」`);
-                i++;
-            } else {
-                dialogueCallback = null;
-                if (callback) callback();
-            }
-        };
-        dialogueCallback();
-    }
-
-    function handleMsgClick() {
-        if (dialogueCallback) dialogueCallback();
+        document.getElementById('side-menu').style.visibility="visible";
+        document.getElementById('side-menu').classList.remove('hidden');
     }
 
     function nextDay() {
-        state.day++;
-        state.timeIndex = 0;
-        state.stamina = 100;
-        state.mode = "normal";
-        
-        document.getElementById('intimate-ui').style.display = "none";
-        document.querySelectorAll('.h-btn').forEach(b => b.disabled = false);
+        state.day++; state.timeIndex=0; state.stamina=100; state.mode="normal";
+        document.getElementById('intimate-ui').style.display="none";
         document.getElementById('btn-naka').classList.add('hidden');
         document.getElementById('btn-bukkake').classList.add('hidden');
-        
-        if (currentBGM && currentBGM.src.includes('bgm_h')) {
-            playBGM('bgm_daily');
-        }
-
-        updateUI();
+        playBGM('bgm_daily'); updateUI();
         displayMsg(`${state.maidName}「${getDialogue('morning')}」`);
     }
 
-    function updateScale() {
-        const viewport = document.getElementById('game-viewport');
-        const scale = Math.min(window.innerWidth / 1400, window.innerHeight / 800);
-        viewport.style.transform = `scale(${scale})`;
-    }
-    window.addEventListener('resize', updateScale);
-    window.addEventListener('load', updateScale);
+    function updateScale() { const v=document.getElementById('game-viewport'); const s=Math.min(window.innerWidth/1400,window.innerHeight/800); v.style.transform=`scale(${s})`; }
+    window.addEventListener('resize', updateScale); window.addEventListener('load', updateScale);
 </script>
 </body>
 </html>
