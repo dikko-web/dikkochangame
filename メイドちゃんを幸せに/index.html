@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Maid Simulation - Fixed 1400x800</title>
+    <title>Maid Simulation - Fixed</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
@@ -15,7 +15,6 @@
             --slot-active: #8b0000;
         }
 
-        /* 外側の背景：常に黒 */
         body, html { 
             margin: 0; padding: 0; height: 100%; width: 100%; 
             background: #000; overflow: hidden; 
@@ -23,7 +22,6 @@
             display: flex; align-items: center; justify-content: center;
         }
         
-        /* 1400x800固定のゲーム画面 */
         #game-viewport {
             position: absolute; 
             width: 1400px; 
@@ -31,19 +29,24 @@
             background: #222; 
             overflow: hidden;
             flex-shrink: 0;
-            /* スケールの基準点を中心にする */
             transform-origin: center center;
         }
 
         .screen { position: absolute; inset: 0; display: none; }
         .screen.active { display: block; }
 
-        #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; }
+        #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: background 0.8s ease; }
         
-        /* キャラの配置：1400x800に基づいたpx指定 */
         #char-layer { 
             position: absolute; bottom: 0; left: 200px; height: 760px; pointer-events: none; 
             z-index: 5; object-fit: contain;
+            transition: left 0.5s ease;
+            animation: breathing 4s ease-in-out infinite;
+        }
+
+        @keyframes breathing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
         }
 
         .glass-window {
@@ -52,7 +55,6 @@
             padding: 20px; color: var(--ui-accent);
         }
 
-        /* 1400x800内での位置・サイズ固定 */
         #time-indicator { 
             position: absolute; top: 20px; right: 40px; 
             display: flex; gap: 8px; z-index: 100; 
@@ -62,36 +64,21 @@
         .time-slot { width: 35px; height: 18px; background: rgba(0,0,0,0.1); border: 1px solid var(--ui-accent); }
         .time-slot.active { background: var(--slot-active); }
 
-        #side-menu { 
-            position: absolute; top: 100px; right: 40px; 
-            width: 480px; z-index: 10; 
-        }
+        #side-menu { position: absolute; top: 100px; right: 40px; width: 480px; z-index: 10; }
         .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .action-btn { 
             background: var(--btn-bg); border: 1px solid var(--ui-accent); 
             padding: 15px 5px; cursor: pointer; font-family: inherit; 
-            font-size: 22px; display: flex; align-items: center; 
-            justify-content: center; text-align: center;
+            font-size: 22px; display: flex; align-items: center; justify-content: center;
         }
         
-        #message-area { 
-            position: absolute; bottom: 20px; left: 20px; right: 20px; 
-            height: 180px; z-index: 10; 
-        }
+        #message-area { position: absolute; bottom: 20px; left: 20px; right: 20px; height: 180px; z-index: 10; cursor: pointer;}
         #message-text { font-size: 26px; line-height: 1.6; padding: 10px; }
+        #message-area.h-window-style { left: 780px; right: 40px; bottom: 40px; height: 250px; padding: 25px; }
 
-        #message-area.h-window-style {
-            left: 750px; right: 40px; bottom: 40px; height: 300px; 
-            padding: 25px;
-        }
-
-        #intimate-ui { 
-            position: absolute; top: 80px; right: 40px; 
-            width: 500px; display: none; z-index: 20; 
-            flex-direction: column; gap: 12px; 
-        }
-        .h-group { background: rgba(0,0,0,0.7); padding: 12px; border: 2px solid #fff; color: #fff; }
-        .h-label { font-size: 16px; border-bottom: 1px solid #fff; margin-bottom: 8px; }
+        #intimate-ui { position: absolute; top: 40px; left: 780px; width: 580px; display: none; z-index: 20; flex-direction: column; gap: 12px; }
+        .h-group { background: rgba(0,0,0,0.8); padding: 15px; border: 2px solid #fff; color: #fff; }
+        .h-label { font-size: 18px; border-bottom: 1px solid #fff; margin-bottom: 10px; font-weight: bold;}
 
         .hidden { display: none !important; }
         .ui-invisible { visibility: hidden !important; opacity: 0; transition: 0.3s; }
@@ -167,10 +154,10 @@
                 <div class="button-grid">
                     <button class="action-btn" onclick="hAction('finger')">指入れ</button>
                     <button class="action-btn" onclick="hAction('insert')">挿入</button>
+                    <button class="action-btn hidden" id="btn-nakadashi" onclick="hAction('naka')">中だし</button>
                 </div>
-                <button class="action-btn hidden" id="btn-nakadashi" onclick="hAction('naka')">中だし</button>
             </div>
-            <div class="button-grid" style="margin-top:10px;">
+            <div class="button-grid" style="margin-top:5px;">
                 <button class="action-btn" style="background:#555; color:#fff;" onclick="endIntimacy()">終了</button>
                 <button class="action-btn" onclick="hAction('check')">様子</button>
             </div>
@@ -187,26 +174,91 @@
 </div>
 
 <script>
-    // 画面のリサイズに合わせてスケーリングを計算する関数
     function updateScale() {
         const viewport = document.getElementById('game-viewport');
-        const targetWidth = 1400;
-        const targetHeight = 800;
-        
-        const scaleX = window.innerWidth / targetWidth;
-        const scaleY = window.innerHeight / targetHeight;
-        
-        // 画面に収まるように、小さい方の比率を採用する（アスペクト比維持）
-        const scale = Math.min(scaleX, scaleY);
-        
+        const scale = Math.min(window.innerWidth / 1400, window.innerHeight / 800);
         viewport.style.transform = `scale(${scale})`;
     }
-
-    // イベント登録
     window.addEventListener('resize', updateScale);
     window.addEventListener('load', updateScale);
 
-    // --- 以降、ロジック部分は変更なし ---
+    const MAID_DIALOGUES = {
+        sayo: {
+            morning: [
+                "おはようございます、{m}。今日も一日、全力で支えさせていただきますね。",
+                "ふふっ、良い朝ですね。朝食の準備は整っておりますよ。",
+                "あ、{m}。……寝癖がついています。直しますので、じっとしていてくださいね？"
+            ],
+            talk: [
+                "お呼びでしょうか、{m}。",
+                "掃除はすべて終わっております。他に何か命じられることはありますか？",
+                "……少しだけ、こうして{m}の側にいてもよろしいでしょうか。"
+            ],
+            pat: [
+                "……っ。あ、ありがとうございます。{m}の手、とても温かいです。",
+                "そんなに撫でられると、メイドとしての威厳がなくなってしまいます……ふふ。",
+                "……もっと、してくださっても……いいんですよ？"
+            ],
+            out: [
+                "お出かけですか？ お供いたします。忘れ物はないでしょうか？",
+                "外の空気は気持ちいいですね。{m}と歩けるなんて、幸せです。",
+                "たまにはこうして二人で歩くのも、良い気分転換になりますね。"
+            ],
+            after_h: [
+                "……はぁ。……{m}。私……幸せすぎて、どうにかなってしまいそうです……。",
+                "……まだ、あなたの熱が残っています。……大好きですよ。",
+                "……お疲れ様でした。……少し、このまま抱き合っていてもいいですか？"
+            ]
+        },
+        kokoa: {
+            morning: [
+                "……ん。……おはよ。……まだ、ねむい。……ぎゅーして。",
+                "……あ、起きた。……朝ごはん、食べる……？",
+                "……{m}、おはよ。……今日はお休み……？ ……だめ？"
+            ],
+            talk: [
+                "……ん。なにか用……？",
+                "……{m}。……これ、あげる。……飴。",
+                "……ふわぁ。……ちょっと、ねむい……。"
+            ],
+            pat: [
+                "……ん。……もっと。……もっと、なでて。",
+                "……えへへ。……{m}の手、すき。",
+                "……しっぽ、あったら、振ってる……たぶん。"
+            ],
+            out: [
+                "……お外？ ……いいよ。……手、つなぐ？",
+                "……あ、ちょうちょ。……まって。……ふふ。",
+                "……{m}。……迷子にならないように、服の端、持ってていい……？"
+            ],
+            after_h: [
+                "……ん。……すごかった。……{m}の中、あつかった……。",
+                "……もう、動けない。……このまま、寝る。……おやすみ。",
+                "……ねぇ、もう一回……。……うそ。……でも、すき。"
+            ]
+        }
+    };
+
+    const AUDIO_ASSETS = {
+        bgm_intro: 'bgm_intro.mp3',
+        bgm_daily: 'bgm_daily.mp3',
+        bgm_h: 'bgm_h.mp3',
+        se_insert: 'se_insert.mp3',
+        se_naka: 'se_naka.mp3'
+    };
+
+    let currentBGM = null;
+    function playBGM(key) {
+        if (currentBGM) { currentBGM.pause(); currentBGM.currentTime = 0; }
+        currentBGM = new Audio(AUDIO_ASSETS[key]);
+        currentBGM.loop = true;
+        currentBGM.play().catch(e => console.log("Audio load error"));
+    }
+    function playSE(key) {
+        const se = new Audio(AUDIO_ASSETS[key]);
+        se.play().catch(e => console.log("SE load error"));
+    }
+
     const ASSETS = {
         bg: { morning: 'bg_morning.jpg', noon: 'bg_noon.jpg', evening: 'bg_evening.jpg', night: 'bg_night.jpg', bed: 'bg_bed.jpg' },
         maid: { sayo: 'sayo_normal.png', kokoa: 'kokoa_normal.png', sayo_h: 'sayo_h.png', kokoa_h: 'kokoa_h.png' }
@@ -216,7 +268,7 @@
     let dialogueCallback = null;
 
     function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-    function showSelection() { showScreen('selection-screen'); }
+    function showSelection() { playBGM('bgm_intro'); showScreen('selection-screen'); }
     function selectMaid(type) { state.maidType = type; document.getElementById('maid-name').value = type === 'sayo' ? "サヨ" : "ここあ"; showScreen('naming-screen'); }
 
     function finalizeNaming() {
@@ -224,22 +276,29 @@
         state.maidName = document.getElementById('maid-name').value || (state.maidType === 'sayo' ? "サヨ" : "ここあ");
         document.getElementById('display-maid-name').innerText = state.maidName;
         document.getElementById('char-layer').src = ASSETS.maid[state.maidType];
+        playBGM('bgm_daily');
         updateUI();
         showScreen('main-screen');
+        displayMsg(`${state.maidName}「${getDialogue('morning')}」`);
+    }
+
+    function getDialogue(category) {
+        const pool = MAID_DIALOGUES[state.maidType][category];
+        const randomIndex = Math.floor(Math.random() * pool.length);
+        return pool[randomIndex].replace(/{m}/g, state.masterName);
     }
 
     function handleAction(type) {
         if (state.timeIndex > 5) { handleBed(); return; }
-        if (type === 'talk') { state.love += 1; displayMsg(`${state.maidName}とお話ししました。`); }
-        else if (type === 'pat') { state.love += 2; displayMsg(`${state.maidName}を撫でました。`); }
+        if (type === 'talk') { state.love += 1; displayMsg(`${state.maidName}「${getDialogue('talk')}」`); } 
+        else if (type === 'pat') { state.love += 2; displayMsg(`${state.maidName}「${getDialogue('pat')}」`); }
+        else if (type === 'out') { state.love += 3; displayMsg(`${state.maidName}「${getDialogue('out')}」`); }
         else if (type === 'status') { displayMsg(`${state.maidName}の好感度: ${state.love}`); return; }
-        state.timeIndex++; updateUI();
+        state.timeIndex++; 
+        updateUI();
     }
 
-    function toggleUI() {
-        const uiElements = document.querySelectorAll('.ui-el');
-        uiElements.forEach(el => el.classList.toggle('ui-invisible'));
-    }
+    function toggleUI() { document.querySelectorAll('.ui-el').forEach(el => el.classList.toggle('ui-invisible')); }
 
     function handleBed() {
         if (state.love >= 20) {
@@ -251,11 +310,19 @@
         } else { nextDay(); }
     }
 
+    // セリフを1つずつ進める関数
     function playDialogue(lines, callback) {
-        let i = 0; dialogueCallback = () => {
-            if (i < lines.length) { displayMsg(`${state.maidName}「${lines[i]}」`); i++; } else { dialogueCallback = null; callback(); }
+        let i = 0; 
+        dialogueCallback = () => {
+            if (i < lines.length) { 
+                displayMsg(`${state.maidName}「${lines[i]}」`); 
+                i++; 
+            } else { 
+                dialogueCallback = null; 
+                if(callback) callback(); 
+            }
         };
-        dialogueCallback();
+        dialogueCallback(); // 初回実行
     }
 
     function handleMsgClick() { if (dialogueCallback) dialogueCallback(); }
@@ -265,7 +332,8 @@
         const charLayer = document.getElementById('char-layer');
         document.getElementById('bg-layer').style.backgroundImage = `url(${ASSETS.bg.bed})`;
         charLayer.src = ASSETS.maid[state.maidType + "_h"];
-        charLayer.style.left = "50px"; 
+        charLayer.style.left = "0px"; 
+        playBGM('bgm_h');
         document.getElementById('message-area').classList.add('h-window-style');
         document.getElementById('intimate-ui').style.display = "flex";
         displayMsg(`熱を帯びた${state.maidName}を抱き寄せました……。`);
@@ -273,14 +341,16 @@
 
     function hAction(act) {
         const charLayer = document.getElementById('char-layer');
-        const actionImg = `${state.maidType}_${act}.jpg`;
+        charLayer.src = `${state.maidType}_${act}.jpg`;
         charLayer.onerror = () => { charLayer.src = ASSETS.maid[state.maidType + "_h"]; charLayer.onerror = null; };
-        charLayer.src = actionImg;
+        if (act === 'insert') playSE('se_insert');
+        if (act === 'naka') playSE('se_naka');
         const msgs = { kiss: "深く口づけました。", breast: "胸を愛撫しました。", clit: "敏感な部分を刺激しました。", finger: "指を挿入しました。", insert: "最後まで繋がりました……。", naka: "内側にすべてを注ぎ込みました……。", check: `${state.maidName}は蕩けた表情で吐息を漏らしています。` };
         if (act === 'insert' || act === 'naka') { document.getElementById('btn-nakadashi').classList.remove('hidden'); }
         displayMsg(msgs[act] || "...");
     }
 
+    // --- ここを修正しました ---
     function endIntimacy() {
         if(confirm("行為を終了しますか？")) {
             const charLayer = document.getElementById('char-layer');
@@ -291,7 +361,17 @@
             document.getElementById('message-area').classList.remove('h-window-style');
             charLayer.style.left = "200px";
             charLayer.src = ASSETS.maid[state.maidType];
-            state.mode = "normal"; nextDay();
+            playBGM('bgm_daily');
+            
+            state.mode = "normal";
+            state.timeIndex = 5; 
+            updateUI();
+
+            // 事後のセリフを表示し、クリックしたら翌日に進むように設定
+            const postLine = getDialogue('after_h');
+            playDialogue([postLine], () => {
+                nextDay(); // セリフを読み終わったら次の日へ
+            });
         }
     }
 
@@ -304,7 +384,14 @@
     }
 
     function displayMsg(txt) { document.getElementById('message-text').innerHTML = txt; }
-    function nextDay() { state.day++; state.timeIndex = 0; updateUI(); displayMsg("新しい一日が始まります。"); }
+    
+    function nextDay() { 
+        state.day++; 
+        state.timeIndex = 0; 
+        updateUI(); 
+        displayMsg(`${state.maidName}「${getDialogue('morning')}」`); 
+    }
+    
     function saveGame() { localStorage.setItem('maid_save_final', JSON.stringify(state)); alert("セーブ完了"); }
 </script>
 </body>
