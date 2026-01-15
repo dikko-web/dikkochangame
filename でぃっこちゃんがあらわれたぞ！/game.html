@@ -2,190 +2,291 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>触手 vs メスガキディッコ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Maid Simulation - Complete Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: "MS Gothic", monospace; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        #game-container { width: 360px; height: 480px; position: relative; border: 2px solid #fff; display: flex; flex-direction: column; background: #000; }
-        
-        #status-area { padding: 10px; border-bottom: 2px solid #fff; background: #111; font-size: 14px; }
-        .bar-bg { width: 100%; height: 8px; background: #333; border: 1px solid #fff; margin: 4px 0 8px 0; }
-        #enemy-hp-fill { width: 100%; height: 100%; background: #f0f; transition: 0.3s; }
-        #player-st-fill { width: 100%; height: 100%; background: #0f0; transition: 0.3s; }
-
-        #message-box { height: 90px; padding: 12px; font-size: 14px; border-bottom: 1px solid #444; box-sizing: border-box; background: #050505; overflow-y: auto; line-height: 1.4; }
-        
-        #character-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; }
-        #character-image { max-width: 85%; max-height: 85%; object-fit: contain; animation: breathe 3s ease-in-out infinite alternate; }
-        
-        @keyframes breathe { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
-        @keyframes shake { 0% { transform: translate(-5px,0); } 100% { transform: translate(5px,0); } }
-
-        /* バトル操作ボタン */
-        #button-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; padding: 12px; background: #111; height: 130px; }
-        .game-button { background: #222; color: white; border: 1px solid #fff; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
-        .game-button:disabled { color: #555; border-color: #444; opacity: 0.6; cursor: not-allowed; }
-
-        /* オーバーレイ */
-        .overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        
-        /* ★重要：オーバーレイ専用ボタン（バトルのロックに影響されない） */
-        .overlay-button { 
-            background: #222; color: white; border: 2px solid #fff; border-radius: 8px; 
-            font-size: 16px; font-weight: bold; cursor: pointer; padding: 15px; margin: 10px;
-            z-index: 1100; pointer-events: auto; /* タップを確実に許可 */
+        :root {
+            --ui-window-bg: rgba(230, 226, 211, 0.85); 
+            --ui-accent: #3e3a39; 
+            --btn-bg: #e6e2d3;
+            --slot-active: #8b0000;
         }
-        .overlay-button:active { background: #666; }
 
-        /* スライドショー */
-        #slideshow-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; justify-content: center; align-items: center; z-index: 2000; cursor: pointer; }
-        #slideshow-image { max-width: 100%; max-height: 100%; object-fit: contain; opacity: 0; transition: opacity 0.4s; }
-        #slideshow-image.active { opacity: 1; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background: #000; overflow: hidden; font-family: 'Shippori Mincho', serif; }
+        #game-viewport {
+            position: relative; width: 100vw; height: 56.25vw; max-width: 177.78vh; max-height: 100vh;
+            margin: auto; background: #222; overflow: hidden; top: 50%; transform: translateY(-50%);
+        }
+
+        .screen { position: absolute; inset: 0; display: none; }
+        .screen.active { display: block; }
+
+        #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: 1.5s ease-in-out; }
+        #char-layer { 
+            position: absolute; bottom: 0; left: 15%; height: 95%; pointer-events: none; 
+            transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1.0); z-index: 5; 
+        }
+
+        .glass-window {
+            background: var(--ui-window-bg); border: 1px solid var(--ui-accent);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(4px); padding: 12px;
+            color: var(--ui-accent); transition: all 0.6s ease;
+        }
+
+        .selection-container { display: flex; flex-direction: row; gap: 40px; justify-content: center; align-items: center; height: 100%; background: rgba(0,0,0,0.8); }
+        .maid-card { width: 280px; text-align: center; cursor: pointer; transition: 0.3s; background: var(--ui-window-bg); padding: 20px; border: 2px solid transparent; }
+        .maid-card:hover { border-color: var(--slot-active); transform: translateY(-10px); }
+        .maid-thumb { width: 100%; height: 350px; margin-bottom: 15px; background-size: contain; background-repeat: no-repeat; background-position: center; }
+
+        #time-indicator { position: absolute; top: 15px; right: 3%; display: flex; gap: 4px; z-index: 100; padding: 8px 12px; background: var(--ui-window-bg); border: 1px solid var(--ui-accent); }
+        .time-group { display: flex; align-items: center; gap: 4px; margin-left: 10px; }
+        .time-slot { width: 25px; height: 12px; background: rgba(0,0,0,0.1); border: 1px solid var(--ui-accent); }
+        .time-slot.active { background: var(--slot-active); }
+
+        #side-menu { position: absolute; top: 15%; right: 3%; width: 35%; z-index: 10; }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .action-btn { background: var(--btn-bg); border: 1px solid var(--ui-accent); padding: 10px 5px; cursor: pointer; font-family: inherit; font-size: 1rem; }
+        
+        /* 通常時メッセージエリア：被り防止のため少し短く設定 */
+        #message-area { position: absolute; bottom: 2%; left: 2%; right: 2%; height: 18%; z-index: 10; }
+        
+        /* 行為時のウィンドウ形状（右寄せ縦型） */
+        #message-area.h-window-style { left: 55%; right: 2%; bottom: 4%; height: 35%; border: 2px solid rgba(255, 255, 255, 0.4); }
+
+        #message-text { font-size: 1.2rem; line-height: 1.5; height: 75%; overflow: hidden; }
+
+        /* 行為メニュー */
+        #intimate-ui { position: absolute; top: 8%; right: 3%; width: 280px; display: none; z-index: 20; flex-direction: column; gap: 10px; }
+        .h-group { display: flex; flex-direction: column; gap: 5px; background: rgba(0,0,0,0.7); padding: 10px; border: 1px solid #fff; color: #fff; }
+        .h-label { font-size: 0.8rem; border-bottom: 1px solid #fff; margin-bottom: 5px; }
+
+        /* 中だしボタン専用（赤） */
+        #btn-nakadashi { background: #8b0000 !important; color: #fff; border: 1px solid #fff; font-weight: bold; margin-top: 5px; }
+
+        /* スマホ用レスポンシブ */
+        @media screen and (max-width: 768px) {
+            #side-menu, #intimate-ui { width: 45%; font-size: 0.8rem; }
+            #message-area.h-window-style { left: 40%; width: 58%; height: 30%; }
+            #char-layer { left: 0 !important; height: 80%; }
+        }
+
+        .hidden { display: none !important; }
+        .ui-invisible { visibility: hidden !important; opacity: 0; transition: 0.3s; }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <div id="status-area">
-        ディッコちゃんの屈服度: <span id="e-hp-val">100</span>%
-        <div class="bar-bg"><div id="enemy-hp-fill"></div></div>
-        お前の触手制御力: <span id="p-st-val">100</span>
-        <div class="bar-bg"><div id="player-st-fill"></div></div>
-    </div>
-    <div id="message-box">「う、うわっ…何よこのヌルヌルしたやつ！<br>やめなさいよ！変態！」</div>
-    
-    <div id="character-area">
-        <img src="ball.png" id="character-image" alt="キャラ">
-
-        <div id="lose-overlay" class="overlay">
-            <h1 style="color: red; font-size: 32px;">制御失敗…</h1>
-            <p style="padding: 20px;">「あはは！触手すら操れないの？<br>本当、無様で笑っちゃう♡」</p>
-            <button class="overlay-button" onclick="location.reload()">再挑戦</button>
+<div id="game-viewport">
+    <div id="title-screen" class="screen active">
+        <div style="text-align: center; margin-top: 15%;">
+            <h1 style="color: white; font-size: 3rem; text-shadow: 2px 2px 10px #000;">Maid Simulation</h1>
+            <button class="action-btn" style="width: 200px; padding: 15px;" onclick="showSelection()">物語を始める</button>
         </div>
+    </div>
 
-        <div id="win-overlay" class="overlay">
-            <h1 style="color: #f0f; font-size: 32px;">わからせ成功！</h1>
-            <p>ディッコちゃんは完全に無力化された。<br>どうしてあげる？</p>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="overlay-button" onclick="startEnding('jail')">触手牢屋へ<br>放り込む</button>
-                <button class="overlay-button" onclick="startEnding('love')">いっぱい<br>愛してあげる</button>
+    <div id="selection-screen" class="screen">
+        <div class="selection-container">
+            <div class="maid-card" onclick="selectMaid('sayo')">
+                <div class="maid-thumb" style="background-image: url('sayo_normal.png');"></div> 
+                <h2>サヨ</h2><p>従順で健気なメイド。</p>
+            </div>
+            <div class="maid-card" onclick="selectMaid('kokoa')">
+                <div class="maid-thumb" style="background-image: url('kokoa_normal.png');"></div> 
+                <h2>ここあ</h2><p>無口で不思議な少女。</p>
             </div>
         </div>
     </div>
 
-    <div id="button-grid">
-        <button class="game-button" onclick="battleAction('bind')">触手拘束</button>
-        <button class="game-button" onclick="battleAction('caress')">ヌルヌル愛撫</button>
-        <button class="game-button" onclick="battleAction('tighten')">締め上げる</button>
-        <button class="game-button" onclick="battleAction('threat')">脅す</button>
+    <div id="naming-screen" class="screen">
+        <div class="glass-window" style="width: 350px; margin: 10% auto; text-align: center;">
+            <p>主人の名</p><input type="text" id="master-name" value="ご主人様" style="width:80%; margin-bottom:10px;">
+            <p>メイドの名</p><input type="text" id="maid-name" value="" style="width:80%;"><br><br>
+            <button class="action-btn" style="width: 100%;" onclick="finalizeNaming()">開始</button>
+        </div>
+    </div>
+
+    <div id="main-screen" class="screen">
+        <div id="time-indicator" class="ui-el">
+            <div class="time-group"><span>朝</span><div class="time-slot" id="slot-0"></div><div class="time-slot" id="slot-1"></div></div>
+            <div class="time-group"><span>昼</span><div class="time-slot" id="slot-2"></div><div class="time-slot" id="slot-3"></div></div>
+            <div class="time-group"><span>夜</span><div class="time-slot" id="slot-4"></div><div class="time-slot" id="slot-5"></div></div>
+        </div>
+
+        <div id="bg-layer"></div>
+        <img id="char-layer" src="">
+
+        <div id="side-menu" class="glass-window ui-el">
+            <div style="border-bottom: 1px solid var(--ui-accent); margin-bottom: 8px; font-weight: bold; display: flex; justify-content: space-between;">
+                <span id="display-maid-name">NAME</span><span id="display-day">Day 1</span>
+            </div>
+            <div class="button-grid">
+                <button class="action-btn" onclick="handleAction('talk')">会話</button>
+                <button class="action-btn" onclick="handleAction('pat')">頭を撫でる</button>
+                <button class="action-btn" onclick="handleAction('out')">外出</button>
+                <button class="action-btn" onclick="handleAction('mix')">調合</button>
+                <button class="action-btn" onclick="handleAction('dress')">着替え</button>
+                <button class="action-btn" onclick="handleAction('status')">状態</button>
+                <button class="action-btn hidden" id="btn-sleep" onclick="handleBed()">ベッドへ</button>
+            </div>
+        </div>
+
+        <div id="intimate-ui" class="ui-el">
+            <div class="h-group">
+                <div class="h-label">愛撫</div>
+                <div class="button-grid">
+                    <button class="action-btn" onclick="hAction('kiss')">キス</button>
+                    <button class="action-btn" onclick="hAction('breast')">胸</button>
+                    <button class="action-btn" onclick="hAction('clit')">クリト</button>
+                </div>
+            </div>
+            <div class="h-group">
+                <div class="h-label">秘部</div>
+                <div class="button-grid">
+                    <button class="action-btn" onclick="hAction('finger')">指入れ</button>
+                    <button class="action-btn" onclick="hAction('insert')">挿入</button>
+                </div>
+                <button class="action-btn hidden" id="btn-nakadashi" onclick="hAction('naka')">中だし</button>
+            </div>
+            <div class="button-grid" style="margin-top:5px;">
+                <button class="action-btn" style="background:#555; color:#fff;" onclick="endIntimacy()">終了</button>
+                <button class="action-btn" onclick="hAction('check')">様子</button>
+            </div>
+        </div>
+
+        <div id="message-area" class="glass-window ui-el" onclick="handleMsgClick()">
+            <div id="message-text">...</div>
+            <div style="text-align: right; position: absolute; bottom: 5px; right: 10px;">
+                <button class="sys-btn" style="background:none; border:none; color:#666; cursor:pointer; font-size:0.7rem;" onclick="toggleUI(); event.stopPropagation();">UI隠す</button>
+                <button class="sys-btn" style="background:none; border:none; color:#666; cursor:pointer; font-size:0.7rem;" onclick="saveGame(); event.stopPropagation();">セーブ</button>
+            </div>
+        </div>
     </div>
 </div>
 
-<div id="slideshow-container" onclick="showNextSlide()">
-    <img id="slideshow-image" src="">
-    <div style="position: absolute; bottom: 20px; color: rgba(255,255,255,0.5);">タップで次へ</div>
-</div>
-
 <script>
-    let enemyHP = 100;
-    let playerST = 100;
-    let slideImages = [];
-    let slideIndex = 0;
+    const ASSETS = {
+        bg: { morning: 'bg_morning.jpg', noon: 'bg_noon.jpg', evening: 'bg_evening.jpg', night: 'bg_night.jpg', bed: 'bg_bed.jpg' },
+        maid: { sayo: 'sayo_normal.png', kokoa: 'kokoa_normal.png', sayo_h: 'sayo_h.png', kokoa_h: 'kokoa_h.png' }
+    };
 
-    function battleAction(type) {
-        if (enemyHP <= 0 || playerST <= 0) return;
-        disableButtons(true);
-        let eDmg = 0; let pCost = 0; let pRec = 0; let msg = "";
+    let state = { masterName: "ご主人様", maidName: "", maidType: "sayo", day: 1, timeIndex: 0, love: 0, mode: "normal" };
+    let dialogueCallback = null;
 
-        switch(type) {
-            case 'bind': eDmg = 15; pCost = 10; msg = "触手で手足を縛り上げた！"; break;
-            case 'caress': eDmg = 5; pRec = 30; msg = "執拗にヌルヌルと愛撫した。"; break;
-            case 'tighten': eDmg = 30; pCost = 25; msg = "触手で強く締め上げた！"; break;
-            case 'threat': 
-                if (Math.random() > 0.4) { eDmg = 40; pCost = 10; msg = "恐怖で心を折りにいった！"; }
-                else { pCost = 15; msg = "ディッコちゃんはまだ強気だ。"; }
-                break;
-        }
+    function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+    function showSelection() { showScreen('selection-screen'); }
+    function selectMaid(type) { state.maidType = type; document.getElementById('maid-name').value = type === 'sayo' ? "サヨ" : "ここあ"; showScreen('naming-screen'); }
 
-        enemyHP = Math.max(0, enemyHP - eDmg);
-        playerST = Math.max(0, Math.min(100, playerST - pCost + pRec));
-        updateUI(msg);
-
-        if (enemyHP <= 0) {
-            setTimeout(() => {
-                document.getElementById('button-grid').style.display = 'none';
-                document.getElementById('win-overlay').style.display = 'flex';
-                // 念のため全てのロックを解除
-                disableButtons(false);
-            }, 1000);
-        } else {
-            setTimeout(enemyTurn, 1000);
-        }
+    function finalizeNaming() {
+        state.masterName = document.getElementById('master-name').value || "ご主人様";
+        state.maidName = document.getElementById('maid-name').value || (state.maidType === 'sayo' ? "サヨ" : "ここあ");
+        document.getElementById('display-maid-name').innerText = state.maidName;
+        document.getElementById('char-layer').src = ASSETS.maid[state.maidType];
+        updateUI();
+        showScreen('main-screen');
     }
 
-    function enemyTurn() {
-        let pDmg = 10 + Math.floor(Math.random() * 20);
-        playerST = Math.max(0, playerST - pDmg);
-        updateUI("ディッコちゃんの抵抗！", true);
-        
-        if (playerST <= 0) {
-            setTimeout(() => {
-                document.getElementById('button-grid').style.display = 'none';
-                document.getElementById('lose-overlay').style.display = 'flex';
-                disableButtons(false);
-            }, 1000);
-        } else {
-            disableButtons(false);
+    function handleAction(type) {
+        if (state.timeIndex > 5) { handleBed(); return; }
+        if (type === 'talk') { state.love += 1; displayMsg(`${state.maidName}とお話ししました。`); }
+        else if (type === 'pat') { state.love += 2; displayMsg(`${state.maidName}を撫でました。`); }
+        else if (type === 'status') { displayMsg(`${state.maidName}の好感度: ${state.love}`); return; }
+        state.timeIndex++; updateUI();
+    }
+
+    function toggleUI() {
+        const uiElements = document.querySelectorAll('.ui-el');
+        const isHidden = uiElements[0].classList.contains('ui-invisible');
+        uiElements.forEach(el => el.classList.toggle('ui-invisible'));
+        if (!isHidden) {
+            const overlay = document.createElement('div');
+            overlay.id = 'ui-overlay'; overlay.style = "position:absolute; inset:0; z-index:100; cursor:pointer;";
+            overlay.onclick = () => { toggleUI(); overlay.remove(); };
+            document.getElementById('game-viewport').appendChild(overlay);
         }
     }
 
-    function updateUI(msg, isEnemy = false) {
-        document.getElementById('e-hp-val').innerText = enemyHP;
-        document.getElementById('enemy-hp-fill').style.width = enemyHP + "%";
-        document.getElementById('p-st-val').innerText = playerST;
-        document.getElementById('player-st-fill').style.width = playerST + "%";
-        document.getElementById('message-box').innerHTML = msg;
-        const char = document.getElementById('character-image');
-        if (isEnemy) { char.style.transform = "scale(1.1) rotate(5deg)"; setTimeout(() => char.style.transform = "scale(1.0)", 200); }
-        else { char.style.animation = "shake 0.1s infinite"; setTimeout(() => char.style.animation = "breathe 3s ease-in-out infinite alternate", 500); }
+    function handleBed() {
+        if (state.love >= 20) {
+            state.mode = "event";
+            document.getElementById('side-menu').style.display = "none";
+            document.getElementById('time-indicator').style.display = "none";
+            const lines = state.maidType === 'sayo' ? ["……あの、マスター。", "もう、我慢できません……。", "あなたの、熱いところ……ください。"] : ["……ん。……マスター。", "……ここ、あつい。", "……もっと。……つなげて。"];
+            playDialogue(lines, startIntimacy);
+        } else { nextDay(); }
     }
 
-    function disableButtons(bool) {
-        // game-button クラスだけを無効化（overlay-button は無効化しない）
-        const btns = document.getElementsByClassName('game-button');
-        for (let b of btns) b.disabled = bool;
-    }
-
-    function startEnding(type) {
-        document.getElementById('win-overlay').style.display = 'none';
-        document.getElementById('game-container').style.display = 'none';
-        document.getElementById('slideshow-container').style.display = 'flex';
-        slideImages = [];
-        const folder = (type === 'love') ? 'date' : 'tentacles'; 
-        for (let i = 1; i <= 51; i++) {
-            slideImages.push(`${folder}/${i.toString().padStart(3, '0')}.jpg`);
-        }
-        slideIndex = 0;
-        showNextSlide();
-    }
-
-    function showNextSlide() {
-        const slideImg = document.getElementById('slideshow-image');
-        if (slideIndex >= slideImages.length) {
-            alert("全てのシーンを表示しました。");
-            location.reload();
-            return;
-        }
-        slideImg.classList.remove('active');
-        const tempImg = new Image();
-        tempImg.src = slideImages[slideIndex];
-        tempImg.onload = () => {
-            slideImg.src = tempImg.src;
-            slideImg.classList.add('active');
-            slideIndex++;
+    function playDialogue(lines, callback) {
+        let i = 0; dialogueCallback = () => {
+            if (i < lines.length) { displayMsg(`${state.maidName}「${lines[i]}」`); i++; } else { dialogueCallback = null; callback(); }
         };
-        tempImg.onerror = () => { location.reload(); };
+        dialogueCallback();
     }
+
+    function handleMsgClick() { if (dialogueCallback) dialogueCallback(); }
+
+    function startIntimacy() {
+        state.mode = "h";
+        const charLayer = document.getElementById('char-layer');
+        document.getElementById('bg-layer').style.backgroundImage = `url(${ASSETS.bg.bed})`;
+        charLayer.src = ASSETS.maid[state.maidType + "_h"];
+        charLayer.style.left = "2%"; // キャラを左へ
+        document.getElementById('message-area').classList.add('h-window-style'); // ウィンドウを右へ
+        document.getElementById('intimate-ui').style.display = "flex";
+        displayMsg(`熱を帯びた${state.maidName}を抱き寄せました……。`);
+    }
+
+    function hAction(act) {
+        const charLayer = document.getElementById('char-layer');
+        // 画像切り替え： ${メイド名}_${アクション名}.jpg
+        const actionImg = `${state.maidType}_${act}.jpg`;
+        
+        // 画像が存在しない場合のフォールバック（デフォルトH画像に戻す）
+        charLayer.onerror = () => { charLayer.src = ASSETS.maid[state.maidType + "_h"]; charLayer.onerror = null; };
+        charLayer.src = actionImg;
+
+        const msgs = { 
+            kiss: "深く口づけました。", breast: "胸を愛撫しました。", clit: "敏感な部分を刺激しました。", 
+            finger: "指を挿入しました。", insert: "最後まで繋がりました……。", 
+            naka: "内側の熱さを感じながら、すべてを注ぎ込みました……。",
+            check: `${state.maidName}は熱い吐息を漏らしています。` 
+        };
+
+        // 挿入または中出し時に「中だし」ボタンを出現させる
+        if (act === 'insert' || act === 'naka') {
+            document.getElementById('btn-nakadashi').classList.remove('hidden');
+        }
+
+        displayMsg(msgs[act] || "...");
+    }
+
+    function endIntimacy() {
+        if(confirm("行為を終了しますか？")) {
+            const charLayer = document.getElementById('char-layer');
+            document.getElementById('intimate-ui').style.display = "none";
+            document.getElementById('side-menu').style.display = "block";
+            document.getElementById('time-indicator').style.display = "flex";
+            document.getElementById('btn-nakadashi').classList.add('hidden'); // 中だしボタン隠す
+            document.getElementById('message-area').classList.remove('h-window-style');
+            charLayer.style.left = "15%";
+            charLayer.src = ASSETS.maid[state.maidType];
+            state.mode = "normal"; nextDay();
+        }
+    }
+
+    function updateUI() {
+        document.getElementById('display-day').innerText = `Day ${state.day}`;
+        for (let i = 0; i < 6; i++) { document.getElementById(`slot-${i}`).classList.toggle('active', i < state.timeIndex); }
+        const bgs = [ASSETS.bg.morning, ASSETS.bg.morning, ASSETS.bg.noon, ASSETS.bg.evening, ASSETS.bg.night, ASSETS.bg.night];
+        document.getElementById('bg-layer').style.backgroundImage = `url(${bgs[state.timeIndex] || ASSETS.bg.morning})`;
+        document.getElementById('btn-sleep').classList.toggle('hidden', state.timeIndex < 4);
+    }
+
+    function displayMsg(txt) { document.getElementById('message-text').innerHTML = txt; }
+    function nextDay() { state.day++; state.timeIndex = 0; updateUI(); displayMsg("新しい一日が始まります。"); }
+    function saveGame() { localStorage.setItem('maid_save_final', JSON.stringify(state)); alert("セーブ完了"); }
 </script>
 </body>
 </html>

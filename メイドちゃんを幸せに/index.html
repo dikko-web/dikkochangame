@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>メイドちゃんを幸せに - Auto Layout Optimized</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Maid Simulation - Complete Edition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
@@ -15,33 +15,25 @@
             --slot-active: #8b0000;
         }
 
-        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; font-family: 'Shippori Mincho', serif; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background: #000; overflow: hidden; font-family: 'Shippori Mincho', serif; }
         #game-viewport {
             position: relative; width: 100vw; height: 56.25vw; max-width: 177.78vh; max-height: 100vh;
-            margin: auto; background: #222; overflow: hidden;
+            margin: auto; background: #222; overflow: hidden; top: 50%; transform: translateY(-50%);
         }
 
         .screen { position: absolute; inset: 0; display: none; }
         .screen.active { display: block; }
 
         #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: 1.5s ease-in-out; }
-        
-        /* キャラクターレイヤー：アニメーションを滑らかにするため transition を強化 */
         #char-layer { 
-            position: absolute; 
-            bottom: 0; 
-            left: 15%; /* 通常位置 */
-            height: 95%; 
-            pointer-events: none; 
-            transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1.0); 
-            z-index: 5; 
+            position: absolute; bottom: 0; left: 15%; height: 95%; pointer-events: none; 
+            transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1.0); z-index: 5; 
         }
 
         .glass-window {
             background: var(--ui-window-bg); border: 1px solid var(--ui-accent);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(4px); padding: 15px;
-            color: var(--ui-accent);
-            transition: all 0.6s ease; /* レイアウト変更をスムーズにする */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(4px); padding: 12px;
+            color: var(--ui-accent); transition: all 0.6s ease;
         }
 
         .selection-container { display: flex; flex-direction: row; gap: 40px; justify-content: center; align-items: center; height: 100%; background: rgba(0,0,0,0.8); }
@@ -58,24 +50,28 @@
         .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .action-btn { background: var(--btn-bg); border: 1px solid var(--ui-accent); padding: 10px 5px; cursor: pointer; font-family: inherit; font-size: 1rem; }
         
-        /* 通常時のメッセージエリア */
+        /* 通常時メッセージエリア：被り防止のため少し短く設定 */
         #message-area { position: absolute; bottom: 2%; left: 2%; right: 2%; height: 18%; z-index: 10; }
         
-        /* --- 修正：行為時のウィンドウ形状（被らないように右端へ寄せる） --- */
-        #message-area.h-window-style {
-            left: 58%;    /* キャラから遠ざけるため、さらに右へ移動 */
-            right: 2%;
-            bottom: 4%;
-            height: 38%;  /* 縦長にして読みやすくする */
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            padding: 20px;
-        }
+        /* 行為時のウィンドウ形状（右寄せ縦型） */
+        #message-area.h-window-style { left: 55%; right: 2%; bottom: 4%; height: 35%; border: 2px solid rgba(255, 255, 255, 0.4); }
 
-        #message-text { font-size: 1.2rem; line-height: 1.6; height: 75%; overflow-y: hidden; }
+        #message-text { font-size: 1.2rem; line-height: 1.5; height: 75%; overflow: hidden; }
 
-        #intimate-ui { position: absolute; top: 10%; right: 5%; width: 280px; display: none; z-index: 20; flex-direction: column; gap: 12px; }
+        /* 行為メニュー */
+        #intimate-ui { position: absolute; top: 8%; right: 3%; width: 280px; display: none; z-index: 20; flex-direction: column; gap: 10px; }
         .h-group { display: flex; flex-direction: column; gap: 5px; background: rgba(0,0,0,0.7); padding: 10px; border: 1px solid #fff; color: #fff; }
         .h-label { font-size: 0.8rem; border-bottom: 1px solid #fff; margin-bottom: 5px; }
+
+        /* 中だしボタン専用（赤） */
+        #btn-nakadashi { background: #8b0000 !important; color: #fff; border: 1px solid #fff; font-weight: bold; margin-top: 5px; }
+
+        /* スマホ用レスポンシブ */
+        @media screen and (max-width: 768px) {
+            #side-menu, #intimate-ui { width: 45%; font-size: 0.8rem; }
+            #message-area.h-window-style { left: 40%; width: 58%; height: 30%; }
+            #char-layer { left: 0 !important; height: 80%; }
+        }
 
         .hidden { display: none !important; }
         .ui-invisible { visibility: hidden !important; opacity: 0; transition: 0.3s; }
@@ -140,14 +136,19 @@
         <div id="intimate-ui" class="ui-el">
             <div class="h-group">
                 <div class="h-label">愛撫</div>
-                <button class="action-btn" onclick="hAction('kiss')">キス</button>
-                <button class="action-btn" onclick="hAction('breast')">胸</button>
-                <button class="action-btn" onclick="hAction('clit')">クリトリス</button>
+                <div class="button-grid">
+                    <button class="action-btn" onclick="hAction('kiss')">キス</button>
+                    <button class="action-btn" onclick="hAction('breast')">胸</button>
+                    <button class="action-btn" onclick="hAction('clit')">クリト</button>
+                </div>
             </div>
             <div class="h-group">
                 <div class="h-label">秘部</div>
-                <button class="action-btn" onclick="hAction('finger')">指入れ</button>
-                <button class="action-btn" onclick="hAction('insert')">挿入</button>
+                <div class="button-grid">
+                    <button class="action-btn" onclick="hAction('finger')">指入れ</button>
+                    <button class="action-btn" onclick="hAction('insert')">挿入</button>
+                </div>
+                <button class="action-btn hidden" id="btn-nakadashi" onclick="hAction('naka')">中だし</button>
             </div>
             <div class="button-grid" style="margin-top:5px;">
                 <button class="action-btn" style="background:#555; color:#fff;" onclick="endIntimacy()">終了</button>
@@ -158,7 +159,7 @@
         <div id="message-area" class="glass-window ui-el" onclick="handleMsgClick()">
             <div id="message-text">...</div>
             <div style="text-align: right; position: absolute; bottom: 5px; right: 10px;">
-                <button class="sys-btn" style="background:none; border:none; color:#666; cursor:pointer; font-size:0.7rem;" onclick="toggleUI(); event.stopPropagation();">ウィンドウ隠す</button>
+                <button class="sys-btn" style="background:none; border:none; color:#666; cursor:pointer; font-size:0.7rem;" onclick="toggleUI(); event.stopPropagation();">UI隠す</button>
                 <button class="sys-btn" style="background:none; border:none; color:#666; cursor:pointer; font-size:0.7rem;" onclick="saveGame(); event.stopPropagation();">セーブ</button>
             </div>
         </div>
@@ -201,8 +202,7 @@
         uiElements.forEach(el => el.classList.toggle('ui-invisible'));
         if (!isHidden) {
             const overlay = document.createElement('div');
-            overlay.id = 'ui-overlay';
-            overlay.style = "position:absolute; inset:0; z-index:100; cursor:pointer;";
+            overlay.id = 'ui-overlay'; overlay.style = "position:absolute; inset:0; z-index:100; cursor:pointer;";
             overlay.onclick = () => { toggleUI(); overlay.remove(); };
             document.getElementById('game-viewport').appendChild(overlay);
         }
@@ -219,8 +219,7 @@
     }
 
     function playDialogue(lines, callback) {
-        let i = 0;
-        dialogueCallback = () => {
+        let i = 0; dialogueCallback = () => {
             if (i < lines.length) { displayMsg(`${state.maidName}「${lines[i]}」`); i++; } else { dialogueCallback = null; callback(); }
         };
         dialogueCallback();
@@ -231,41 +230,50 @@
     function startIntimacy() {
         state.mode = "h";
         const charLayer = document.getElementById('char-layer');
-        const msgArea = document.getElementById('message-area');
-
         document.getElementById('bg-layer').style.backgroundImage = `url(${ASSETS.bg.bed})`;
         charLayer.src = ASSETS.maid[state.maidType + "_h"];
-        
-        // --- レイアウト自動調整：キャラを左へ、ウィンドウを右へ ---
-        charLayer.style.left = "2%"; // キャラを左端へ移動
-        msgArea.classList.add('h-window-style'); // ウィンドウを右端縦型へ
-        
+        charLayer.style.left = "2%"; // キャラを左へ
+        document.getElementById('message-area').classList.add('h-window-style'); // ウィンドウを右へ
         document.getElementById('intimate-ui').style.display = "flex";
         displayMsg(`熱を帯びた${state.maidName}を抱き寄せました……。`);
+    }
+
+    function hAction(act) {
+        const charLayer = document.getElementById('char-layer');
+        // 画像切り替え： ${メイド名}_${アクション名}.jpg
+        const actionImg = `${state.maidType}_${act}.jpg`;
+        
+        // 画像が存在しない場合のフォールバック（デフォルトH画像に戻す）
+        charLayer.onerror = () => { charLayer.src = ASSETS.maid[state.maidType + "_h"]; charLayer.onerror = null; };
+        charLayer.src = actionImg;
+
+        const msgs = { 
+            kiss: "深く口づけました。", breast: "胸を愛撫しました。", clit: "敏感な部分を刺激しました。", 
+            finger: "指を挿入しました。", insert: "最後まで繋がりました……。", 
+            naka: "内側の熱さを感じながら、すべてを注ぎ込みました……。",
+            check: `${state.maidName}は熱い吐息を漏らしています。` 
+        };
+
+        // 挿入または中出し時に「中だし」ボタンを出現させる
+        if (act === 'insert' || act === 'naka') {
+            document.getElementById('btn-nakadashi').classList.remove('hidden');
+        }
+
+        displayMsg(msgs[act] || "...");
     }
 
     function endIntimacy() {
         if(confirm("行為を終了しますか？")) {
             const charLayer = document.getElementById('char-layer');
-            const msgArea = document.getElementById('message-area');
-
             document.getElementById('intimate-ui').style.display = "none";
             document.getElementById('side-menu').style.display = "block";
             document.getElementById('time-indicator').style.display = "flex";
-            
-            // --- レイアウト復旧：通常位置に戻す ---
+            document.getElementById('btn-nakadashi').classList.add('hidden'); // 中だしボタン隠す
+            document.getElementById('message-area').classList.remove('h-window-style');
             charLayer.style.left = "15%";
-            msgArea.classList.remove('h-window-style');
-            
             charLayer.src = ASSETS.maid[state.maidType];
-            state.mode = "normal";
-            nextDay();
+            state.mode = "normal"; nextDay();
         }
-    }
-
-    function hAction(act) {
-        const msgs = { kiss: "深く口づけました。", breast: "胸を愛撫しました。", clit: "敏感な部分を刺激しました。", finger: "指を挿入しました。", insert: "最後まで繋がりました……。", check: `${state.maidName}は熱い吐息を漏らしています。` };
-        displayMsg(msgs[act] || "...");
     }
 
     function updateUI() {
