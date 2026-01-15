@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>メイドちゃんを幸せに - Auto Layout Optimized</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ui-window-bg: rgba(230, 226, 211, 0.85); 
+            --ui-accent: #3e3a39; 
+            --btn-bg: #e6e2d3;
+            --slot-active: #8b0000;
+        }
+
+        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; font-family: 'Shippori Mincho', serif; }
+        #game-viewport {
+            position: relative; width: 100vw; height: 56.25vw; max-width: 177.78vh; max-height: 100vh;
+            margin: auto; background: #222; overflow: hidden;
+        }
+
+        .screen { position: absolute; inset: 0; display: none; }
+        .screen.active { display: block; }
+
+        #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: 1.5s ease-in-out; }
+        
+        /* キャラクターレイヤー：アニメーションを滑らかにするため transition を強化 */
+        #char-layer { 
+            position: absolute; 
+            bottom: 0; 
+            left: 15%; /* 通常位置 */
+            height: 95%; 
+            pointer-events: none; 
+            transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1.0); 
+            z-index: 5; 
+        }
+
+        .glass-window {
+            background: var(--ui-window-bg); border: 1px solid var(--ui-accent);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(4px); padding: 15px;
+            color: var(--ui-accent);
+            transition: all 0.6s ease; /* レイアウト変更をスムーズにする */
+        }
+
+        .selection-container { display: flex; flex-direction: row; gap: 40px; justify-content: center; align-items: center; height: 100%; background: rgba(0,0,0,0.8); }
+        .maid-card { width: 280px; text-align: center; cursor: pointer; transition: 0.3s; background: var(--ui-window-bg); padding: 20px; border: 2px solid transparent; }
+        .maid-card:hover { border-color: var(--slot-active); transform: translateY(-10px); }
+        .maid-thumb { width: 100%; height: 350px; margin-bottom: 15px; background-size: contain; background-repeat: no-repeat; background-position: center; }
+
+        #time-indicator { position: absolute; top: 15px; right: 3%; display: flex; gap: 4px; z-index: 100; padding: 8px 12px; background: var(--ui-window-bg); border: 1px solid var(--ui-accent); }
+        .time-group { display: flex; align-items: center; gap: 4px; margin-left: 10px; }
+        .time-slot { width: 25px; height: 12px; background: rgba(0,0,0,0.1); border: 1px solid var(--ui-accent); }
+        .time-slot.active { background: var(--slot-active); }
+
+        #side-menu { position: absolute; top: 15%; right: 3%; width: 35%; z-index: 10; }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .action-btn { background: var(--btn-bg); border: 1px solid var(--ui-accent); padding: 10px 5px; cursor: pointer; font-family: inherit; font-size: 1rem; }
+        
+        /* 通常時のメッセージエリア */
+        #message-area { position: absolute; bottom: 2%; left: 2%; right: 2%; height: 18%; z-index: 10; }
+        
+        /* --- 修正：行為時のウィンドウ形状（被らないように右端へ寄せる） --- */
+        #message-area.h-window-style {
+            left: 58%;    /* キャラから遠ざけるため、さらに右へ移動 */
+            right: 2%;
+            bottom: 4%;
+            height: 38%;  /* 縦長にして読みやすくする */
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            padding: 20px;
+        }
+
+        #message-text { font-size: 1.2rem; line-height: 1.6; height: 75%; overflow-y: hidden; }
+
+        #intimate-ui { position: absolute; top: 10%; right: 5%; width: 280px; display: none; z-index: 20; flex-direction: column; gap: 12px; }
+        .h-group { display: flex; flex-direction: column; gap: 5px; background: rgba(0,0,0,0.7); padding: 10px; border: 1px solid #fff; color: #fff; }
+        .h-label { font-size: 0.8rem; border-bottom: 1px solid #fff; margin-bottom: 5px; }
+
+        .hidden { display: none !important; }
+        .ui-invisible { visibility: hidden !important; opacity: 0; transition: 0.3s; }
+    </style>
+</head>
+<body>
+
+<div id="game-viewport">
+    <div id="title-screen" class="screen active">
+        <div style="text-align: center; margin-top: 15%;">
+            <h1 style="color: white; font-size: 3rem; text-shadow: 2px 2px 10px #000;">Maid Simulation</h1>
+            <button class="action-btn" style="width: 200px; padding: 15px;" onclick="showSelection()">物語を始める</button>
+        </div>
+    </div>
+
+    <div id="selection-screen" class="screen">
+        <div class="selection-container">
+            <div class="maid-card" onclick="selectMaid('sayo')">
+                <div class="maid-thumb" style="background-image: url('sayo_normal.png');"></div> 
+                <h2>サヨ</h2><p>従順で健気なメイド。</p>
+            </div>
+            <div class="maid-card" onclick="selectMaid('kokoa')">
+                <div class="maid-thumb" style="background-image: url('kokoa_normal.png');"></div> 
+                <h2>ここあ</h2><p>無口で不思議な少女。</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="naming-screen" class="screen">
+        <div class="glass-window" style="width: 350px; margin: 10% auto; text-align: center;">
+            <p>主人の名</p><input type="text" id="master-name" value="ご主人様" style="width:80%; margin-bottom:10px;">
+            <p>メイドの名</p><input type="text" id="maid-name" value="" style="width:80%;"><br><br>
+            <button class="action-btn" style="width: 100%;" onclick="finalizeNaming()">開始</button>
+        </div>
+    </div>
+
+    <div id="main-screen" class="screen">
+        <div id="time-indicator" class="ui-el">
+            <div class="time-group"><span>朝</span><div class="time-slot" id="slot-0"></div><div class="time-slot" id="slot-1"></div></div>
+            <div class="time-group"><span>昼</span><div class="time-slot" id="slot-2"></div><div class="time-slot" id="slot-3"></div></div>
+            <div class="time-group"><span>夜</span><div class="time-slot" id="slot-4"></div><div class="time-slot" id="slot-5"></div></div>
+        </div>
+
+        <div id="bg-layer"></div>
+        <img id="char-layer" src="">
+
+        <div id="side-menu" class="glass-window ui-el">
+            <div style="border-bottom: 1px solid var(--ui-accent); margin-bottom: 8px; font-weight: bold; display: flex; justify-content: space-between;">
+                <span id="display-maid-name">NAME</span><span id="display-day">Day 1</span>
+            </div>
+            <div class="button-grid">
+                <button class="action-btn" onclick="handleAction('talk')">会話</button>
+                <button class="action-btn" onclick="handleAction('pat')">頭を撫でる</button>
+                <button class="action-btn" onclick="handleAction('out')">外出</button>
+                <button class="action-btn" onclick="handleAction('mix')">調合</button>
+                <button class="action-btn" onclick="handleAction('dress')">着替え</button>
+                <button class="action-btn" onclick="handleAction('status')">状態</button>
+                <button class="action-btn hidden" id="btn-sleep" onclick="handleBed()">ベッドへ</button>
+            </div>
+        </div>
+
+        <div id="intimate-ui" class="ui-el">
+            <div class="h-group">
+                <div class="h-label">愛撫</div>
+                <button class="action-btn" onclick="hAction('kiss')">キス</button>
+                <button class="action-btn" onclick="hAction('breast')">胸</button>
+                <button class="action-btn" onclick="hAction('clit')">クリトリス</button>
+            </div>
+            <div class="h-group">
+                <div class="h-label">秘部</div>
+                <button class="action-btn" onclick="hAction('finger')">指入れ</button>
+                <button class="action-btn" onclick="hAction('insert')">挿入</button>
+            </div>
+            <div class="button-grid" style="margin-top:5px;">
+                <button class="action-btn" style="background:#555; color:#fff;" onclick="endIntimacy()">終了</button>
+                <button class="action-btn" onclick="hAction('check')">様子</button>
+            </div>
+        </div>
+
+        <div id="message-area" class="glass-window ui-el" onclick="handleMsgClick()">
+            <div id="message-text">...</div>
+            <div style="text-align: right; position: absolute; bottom: 5px; right: 10px;">
+                <button class="sys-btn" style="background:none; border:none; color:#666; cursor:pointer; font-size:0.7rem;" onclick="toggleUI(); event.stopPropagation();">ウィンドウ隠す</button>
+                <button class="sys-btn" style="background:none; border:none; color:#666; cursor:pointer; font-size:0.7rem;" onclick="saveGame(); event.stopPropagation();">セーブ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ASSETS = {
+        bg: { morning: 'bg_morning.jpg', noon: 'bg_noon.jpg', evening: 'bg_evening.jpg', night: 'bg_night.jpg', bed: 'bg_bed.jpg' },
+        maid: { sayo: 'sayo_normal.png', kokoa: 'kokoa_normal.png', sayo_h: 'sayo_h.png', kokoa_h: 'kokoa_h.png' }
+    };
+
+    let state = { masterName: "ご主人様", maidName: "", maidType: "sayo", day: 1, timeIndex: 0, love: 0, mode: "normal" };
+    let dialogueCallback = null;
+
+    function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+    function showSelection() { showScreen('selection-screen'); }
+    function selectMaid(type) { state.maidType = type; document.getElementById('maid-name').value = type === 'sayo' ? "サヨ" : "ここあ"; showScreen('naming-screen'); }
+
+    function finalizeNaming() {
+        state.masterName = document.getElementById('master-name').value || "ご主人様";
+        state.maidName = document.getElementById('maid-name').value || (state.maidType === 'sayo' ? "サヨ" : "ここあ");
+        document.getElementById('display-maid-name').innerText = state.maidName;
+        document.getElementById('char-layer').src = ASSETS.maid[state.maidType];
+        updateUI();
+        showScreen('main-screen');
+    }
+
+    function handleAction(type) {
+        if (state.timeIndex > 5) { handleBed(); return; }
+        if (type === 'talk') { state.love += 1; displayMsg(`${state.maidName}とお話ししました。`); }
+        else if (type === 'pat') { state.love += 2; displayMsg(`${state.maidName}を撫でました。`); }
+        else if (type === 'status') { displayMsg(`${state.maidName}の好感度: ${state.love}`); return; }
+        state.timeIndex++; updateUI();
+    }
+
+    function toggleUI() {
+        const uiElements = document.querySelectorAll('.ui-el');
+        const isHidden = uiElements[0].classList.contains('ui-invisible');
+        uiElements.forEach(el => el.classList.toggle('ui-invisible'));
+        if (!isHidden) {
+            const overlay = document.createElement('div');
+            overlay.id = 'ui-overlay';
+            overlay.style = "position:absolute; inset:0; z-index:100; cursor:pointer;";
+            overlay.onclick = () => { toggleUI(); overlay.remove(); };
+            document.getElementById('game-viewport').appendChild(overlay);
+        }
+    }
+
+    function handleBed() {
+        if (state.love >= 20) {
+            state.mode = "event";
+            document.getElementById('side-menu').style.display = "none";
+            document.getElementById('time-indicator').style.display = "none";
+            const lines = state.maidType === 'sayo' ? ["……あの、マスター。", "もう、我慢できません……。", "あなたの、熱いところ……ください。"] : ["……ん。……マスター。", "……ここ、あつい。", "……もっと。……つなげて。"];
+            playDialogue(lines, startIntimacy);
+        } else { nextDay(); }
+    }
+
+    function playDialogue(lines, callback) {
+        let i = 0;
+        dialogueCallback = () => {
+            if (i < lines.length) { displayMsg(`${state.maidName}「${lines[i]}」`); i++; } else { dialogueCallback = null; callback(); }
+        };
+        dialogueCallback();
+    }
+
+    function handleMsgClick() { if (dialogueCallback) dialogueCallback(); }
+
+    function startIntimacy() {
+        state.mode = "h";
+        const charLayer = document.getElementById('char-layer');
+        const msgArea = document.getElementById('message-area');
+
+        document.getElementById('bg-layer').style.backgroundImage = `url(${ASSETS.bg.bed})`;
+        charLayer.src = ASSETS.maid[state.maidType + "_h"];
+        
+        // --- レイアウト自動調整：キャラを左へ、ウィンドウを右へ ---
+        charLayer.style.left = "2%"; // キャラを左端へ移動
+        msgArea.classList.add('h-window-style'); // ウィンドウを右端縦型へ
+        
+        document.getElementById('intimate-ui').style.display = "flex";
+        displayMsg(`熱を帯びた${state.maidName}を抱き寄せました……。`);
+    }
+
+    function endIntimacy() {
+        if(confirm("行為を終了しますか？")) {
+            const charLayer = document.getElementById('char-layer');
+            const msgArea = document.getElementById('message-area');
+
+            document.getElementById('intimate-ui').style.display = "none";
+            document.getElementById('side-menu').style.display = "block";
+            document.getElementById('time-indicator').style.display = "flex";
+            
+            // --- レイアウト復旧：通常位置に戻す ---
+            charLayer.style.left = "15%";
+            msgArea.classList.remove('h-window-style');
+            
+            charLayer.src = ASSETS.maid[state.maidType];
+            state.mode = "normal";
+            nextDay();
+        }
+    }
+
+    function hAction(act) {
+        const msgs = { kiss: "深く口づけました。", breast: "胸を愛撫しました。", clit: "敏感な部分を刺激しました。", finger: "指を挿入しました。", insert: "最後まで繋がりました……。", check: `${state.maidName}は熱い吐息を漏らしています。` };
+        displayMsg(msgs[act] || "...");
+    }
+
+    function updateUI() {
+        document.getElementById('display-day').innerText = `Day ${state.day}`;
+        for (let i = 0; i < 6; i++) { document.getElementById(`slot-${i}`).classList.toggle('active', i < state.timeIndex); }
+        const bgs = [ASSETS.bg.morning, ASSETS.bg.morning, ASSETS.bg.noon, ASSETS.bg.evening, ASSETS.bg.night, ASSETS.bg.night];
+        document.getElementById('bg-layer').style.backgroundImage = `url(${bgs[state.timeIndex] || ASSETS.bg.morning})`;
+        document.getElementById('btn-sleep').classList.toggle('hidden', state.timeIndex < 4);
+    }
+
+    function displayMsg(txt) { document.getElementById('message-text').innerHTML = txt; }
+    function nextDay() { state.day++; state.timeIndex = 0; updateUI(); displayMsg("新しい一日が始まります。"); }
+    function saveGame() { localStorage.setItem('maid_save_final', JSON.stringify(state)); alert("セーブ完了"); }
+</script>
+</body>
+</html>
